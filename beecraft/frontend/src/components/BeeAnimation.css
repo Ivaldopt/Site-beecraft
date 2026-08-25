@@ -1,0 +1,73 @@
+.bee-anim {
+  width: 400px;
+  height: 400px;
+  margin: 0 auto;
+}
+
+.bee-anim-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.bee-anim-path {
+  fill: none;
+  stroke: none;
+}
+
+/* Hexágono: contorno desenhado em loop, tipo "construindo a colmeia" */
+.bee-anim-hex {
+  fill: none;
+  stroke: var(--honey);
+  stroke-width: 3;
+  stroke-linejoin: round;
+  stroke-dasharray: 520;
+  stroke-dashoffset: 520;
+  animation: bee-anim-draw 3.5s ease-in-out infinite;
+}
+
+@keyframes bee-anim-draw {
+  0% {
+    stroke-dashoffset: 520;
+    opacity: 0.35;
+  }
+  55% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  85% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: -520;
+    opacity: 0.35;
+  }
+}
+
+/* Leve "batida de asa" na imagem enquanto ela voa */
+.bee-anim-flutter {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: bee-anim-bob 2.35s ease-in-out infinite alternate;
+}
+
+@keyframes bee-anim-bob {
+  from {
+    transform: scale(1) rotate(-3deg);
+  }
+  to {
+    transform: scale(2) rotate(3deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bee-anim-hex,
+  .bee-anim-flutter {
+    animation: none;
+  }
+  .bee-anim-hex {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
