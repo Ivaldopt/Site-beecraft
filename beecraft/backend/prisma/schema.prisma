@@ -9,7 +9,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 enum ProductStatus {
@@ -42,249 +41,249 @@ enum OrderStatus {
 }
 
 model Category {
-  id          String    @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
-  slug        String    @unique
+  slug        String  @unique
   description String?
   image       String?
-  active      Boolean   @default(true)
+  active      Boolean @default(true)
 
-  products    Product[]
+  products Product[]
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Product {
-  id          String        @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
-  slug        String        @unique
+  slug        String  @unique
   description String?
   shortDesc   String?
 
-  status      ProductStatus @default(DRAFT)
+  status ProductStatus @default(DRAFT)
 
-  basePrice   Decimal       @db.Decimal(10, 2)
+  basePrice Decimal @db.Decimal(10, 2)
 
-  categoryId  String
-  category    Category      @relation(fields: [categoryId], references: [id])
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
 
-  variants    ProductVariant[]
-  options     ProductOption[]
-  materials   ProductMaterial[]
-  images      ProductImage[]
-  orderItems  OrderItem[]
+  variants   ProductVariant[]
+  options    ProductOption[]
+  materials  ProductMaterial[]
+  images     ProductImage[]
+  orderItems OrderItem[]
+  cartItems  CartItem[]
 
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([categoryId])
   @@index([status])
 }
 
 model ProductVariant {
-  id          String   @id @default(cuid())
-  productId   String
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  name        String
-  sku         String   @unique
-  price       Decimal? @db.Decimal(10, 2)
+  name  String
+  sku   String   @unique
+  price Decimal? @db.Decimal(10, 2)
 
-  width       Decimal? @db.Decimal(8, 2)
-  height      Decimal? @db.Decimal(8, 2)
-  pages       Int?
+  width  Decimal? @db.Decimal(8, 2)
+  height Decimal? @db.Decimal(8, 2)
+  pages  Int?
 
-  active      Boolean  @default(true)
+  active Boolean @default(true)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([productId])
 }
 
 model ProductOption {
-  id          String      @id @default(cuid())
-  productId   String
-  product     Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  name        String
-  slug        String
-  type        OptionType
+  name String
+  slug String
+  type OptionType
 
-  required    Boolean     @default(false)
-  sortOrder   Int         @default(0)
+  required  Boolean @default(false)
+  sortOrder Int     @default(0)
 
-  values      OptionValue[]
+  values OptionValue[]
 
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([productId, slug])
 }
 
 model OptionValue {
-  id          String        @id @default(cuid())
-  optionId    String
-  option      ProductOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  id       String        @id @default(cuid())
+  optionId String
+  option   ProductOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
 
-  name        String
-  value       String?
-  priceDelta  Decimal       @default(0) @db.Decimal(10, 2)
+  name       String
+  value      String?
+  priceDelta Decimal @default(0) @db.Decimal(10, 2)
 
-  active      Boolean       @default(true)
-  sortOrder   Int           @default(0)
+  active    Boolean @default(true)
+  sortOrder Int     @default(0)
 
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([optionId])
 }
 
 model Material {
-  id          String   @id @default(cuid())
-  name        String
-  sku         String?  @unique
+  id   String  @id @default(cuid())
+  name String
+  sku  String? @unique
 
-  unit        String
-  unitCost    Decimal  @db.Decimal(10, 4)
+  unit     String
+  unitCost Decimal @db.Decimal(10, 4)
 
-  supplier    String?
-  active      Boolean  @default(true)
+  supplier String?
+  active   Boolean @default(true)
 
-  products    ProductMaterial[]
+  products ProductMaterial[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ProductMaterial {
-  id          String   @id @default(cuid())
+  id String @id @default(cuid())
 
-  productId   String
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  materialId  String
-  material    Material @relation(fields: [materialId], references: [id])
+  materialId String
+  material   Material @relation(fields: [materialId], references: [id])
 
-  quantity    Decimal  @db.Decimal(10, 4)
-  waste       Decimal  @default(0) @db.Decimal(5, 2)
+  quantity Decimal @db.Decimal(10, 4)
+  waste    Decimal @default(0) @db.Decimal(5, 2)
 
   @@unique([productId, materialId])
 }
 
 model ProductImage {
-  id          String   @id @default(cuid())
-  productId   String
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  url         String
-  alt         String?
-  sortOrder   Int      @default(0)
+  url       String
+  alt       String?
+  sortOrder Int     @default(0)
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([productId])
 }
 
 model Cart {
-  id          String     @id @default(cuid())
-  sessionId   String?    @unique
+  id        String  @id @default(cuid())
+  sessionId String? @unique
 
-  items       CartItem[]
+  items CartItem[]
 
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model CartItem {
-  id          String   @id @default(cuid())
+  id String @id @default(cuid())
 
-  cartId      String
-  cart        Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  cartId String
+  cart   Cart   @relation(fields: [cartId], references: [id], onDelete: Cascade)
 
-  productId   String
-  product     Product  @relation(fields: [productId], references: [id])
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
 
-  quantity    Int
-  unitPrice   Decimal  @db.Decimal(10, 2)
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
 
   configuration Json?
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([cartId])
 }
 
 model Customer {
-  id          String    @id @default(cuid())
+  id String @id @default(cuid())
 
-  name        String
-  email       String    @unique
-  phone       String?
+  name  String
+  email String  @unique
+  phone String?
 
-  orders      Order[]
+  orders Order[]
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Order {
-  id            String      @id @default(cuid())
-  orderNumber   String      @unique
+  id          String @id @default(cuid())
+  orderNumber String @unique
 
-  customerId    String
-  customer      Customer    @relation(fields: [customerId], references: [id])
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
 
-  status        OrderStatus @default(PENDING_PAYMENT)
+  status OrderStatus @default(PENDING_PAYMENT)
 
-  subtotal      Decimal     @db.Decimal(10, 2)
-  discount      Decimal     @default(0) @db.Decimal(10, 2)
-  shipping      Decimal     @default(0) @db.Decimal(10, 2)
-  total         Decimal     @db.Decimal(10, 2)
+  subtotal Decimal @db.Decimal(10, 2)
+  discount Decimal @default(0) @db.Decimal(10, 2)
+  shipping Decimal @default(0) @db.Decimal(10, 2)
+  total    Decimal @db.Decimal(10, 2)
 
-  items         OrderItem[]
+  items OrderItem[]
 
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([customerId])
   @@index([status])
 }
 
 model OrderItem {
-  id             String   @id @default(cuid())
+  id String @id @default(cuid())
 
-  orderId        String
-  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  productId      String
-  product        Product  @relation(fields: [productId], references: [id])
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
 
-  productName    String
-  quantity       Int
-  unitPrice      Decimal  @db.Decimal(10, 2)
-  totalPrice     Decimal  @db.Decimal(10, 2)
+  productName String
+  quantity    Int
+  unitPrice   Decimal @db.Decimal(10, 2)
+  totalPrice  Decimal @db.Decimal(10, 2)
 
-  configuration  Json?
+  configuration Json?
 
-  createdAt      DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([orderId])
 }
 
 model ProductionOrder {
-  id          String   @id @default(cuid())
-  orderId     String   @unique
+  id      String @id @default(cuid())
+  orderId String @unique
 
-  status      OrderStatus @default(PAID)
+  status OrderStatus @default(PAID)
 
-  notes       String?
+  notes String?
 
   startedAt   DateTime?
   completedAt DateTime?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
-
