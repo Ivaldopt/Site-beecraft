@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
+import { useCart } from '../context/CartContext';
 
 export default function Header() {
+  const { totalItems } = useCart();
+
   return (
     <>
       <div className="topbar">
@@ -14,7 +17,7 @@ export default function Header() {
               <path d="M50 32c5 0 7 5 7 9s-2 6-7 6-7-2-7-6 2-9 7-9z" fill="#a9634f" />
               <path d="M38 48c3-4 8-4 12-1 4-3 9-3 12 1 3 5-1 24-12 28-11-4-15-23-12-28z" fill="#a9634f" />
             </svg>
-            Bee<span>craft</span>
+            bee<span>craft</span>
           </Link>
 
           <nav className="menu">
@@ -32,10 +35,10 @@ export default function Header() {
               <svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-9C.8 8.2 2.5 4 6.5 4 9 4 11 5.7 12 7.3 13 5.7 15 4 17.5 4 21.5 4 23.2 8.2 21.5 12 19 16.5 12 21 12 21z" /></svg>
               <b>0</b>
             </button>
-            <button className="icon" aria-label="Carrinho">
+            <Link className="icon" to="/carrinho" aria-label="Carrinho">
               <svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1.4" /><circle cx="18" cy="21" r="1.4" /><path d="M2 3h2l2.4 12.2A2 2 0 0 0 8.4 17H18a2 2 0 0 0 2-1.6L21.6 7H6" /></svg>
-              <b>0</b>
-            </button>
+              <b>{totalItems}</b>
+            </Link>
           </div>
         </div>
       </header>

@@ -7,7 +7,7 @@ export default function EmConstrucao() {
       <BeeAnimation />
 
       <div className="logo em-construcao-logo">
-        bee<span>craft</span>
+        Bee<span>craft</span>
       </div>
 
       <div className="eyebrow em-construcao-eyebrow">

@@ -5,27 +5,27 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 40px 20px;
   background: var(--cream);
 }
 
 .em-construcao-logo {
-  font-size: 34px;
-  margin-top: 8px;
-  margin-bottom: 18px;
+  font-size:27px;
+  font-weight:800;
+  letter-spacing:-1.5px;
 }
 
 .em-construcao-eyebrow {
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 
 .em-construcao-title {
   font-size: clamp(28px, 5vw, 44px);
+  letter-spacing: -0.7px;
   max-width: 560px;
   margin-bottom: 18px;
 }
 
 .em-construcao-lead {
   max-width: 480px;
-  margin-bottom: 0;
+  margin-bottom: 100px;
 }

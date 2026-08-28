@@ -1,7 +1,6 @@
 .bee-anim {
-  width: 400px;
-  height: 400px;
-  margin: 0 auto;
+  width: 240px;
+  height: 210px;
 }
 
 .bee-anim-svg {
@@ -10,64 +9,71 @@
   overflow: visible;
 }
 
-.bee-anim-path {
-  fill: none;
-  stroke: none;
-}
-
-/* Hexágono: contorno desenhado em loop, tipo "construindo a colmeia" */
+/* Contorno fixo da colmeia */
 .bee-anim-hex {
   fill: none;
-  stroke: var(--honey);
-  stroke-width: 3;
+  stroke: var(--honey-deep);
+  stroke-width: 5;
   stroke-linejoin: round;
-  stroke-dasharray: 520;
-  stroke-dashoffset: 520;
-  animation: bee-anim-draw 3.5s ease-in-out infinite;
 }
 
-@keyframes bee-anim-draw {
-  0% {
-    stroke-dashoffset: 520;
-    opacity: 0.35;
-  }
-  55% {
-    stroke-dashoffset: 0;
-    opacity: 1;
-  }
-  85% {
-    stroke-dashoffset: 0;
-    opacity: 1;
-  }
-  100% {
-    stroke-dashoffset: -520;
-    opacity: 0.35;
-  }
+/* Corpo do mel */
+.honey-fill {
+  fill: var(--honey);
 }
 
-/* Leve "batida de asa" na imagem enquanto ela voa */
-.bee-anim-flutter {
+/* Nível do mel: sobe e desce devagar, como se estivesse sendo enchido aos poucos */
+.honey-rise {
   transform-box: fill-box;
-  transform-origin: center;
-  animation: bee-anim-bob 2.35s ease-in-out infinite alternate;
+  animation: honey-breathe 40s ease-in-out infinite alternate;
 }
 
-@keyframes bee-anim-bob {
+@keyframes honey-breathe {
   from {
-    transform: scale(1) rotate(-3deg);
+    transform: translateY(215px);
   }
   to {
-    transform: scale(2) rotate(3deg);
+    transform: translateY(30px);
+  }
+}
+
+/* Ondulação contínua na superfície do mel */
+.honey-wave {
+  animation: honey-ripple 2.6s linear infinite;
+}
+
+@keyframes honey-ripple {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100px);
+  }
+}
+
+/* Abelhas voando: leve tremor de asa enquanto seguem a órbita */
+.bee-fly {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: bee-fly-flutter 0.12s ease-in-out infinite alternate;
+}
+
+@keyframes bee-fly-flutter {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.08);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bee-anim-hex,
-  .bee-anim-flutter {
+  .honey-rise,
+  .honey-wave,
+  .bee-fly {
     animation: none;
   }
-  .bee-anim-hex {
-    stroke-dashoffset: 0;
-    opacity: 1;
+  .honey-rise {
+    transform: translateY(90px);
   }
 }
