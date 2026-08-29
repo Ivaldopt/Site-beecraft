@@ -23,7 +23,27 @@ export function CartProvider({ children }) {
   function addItem(item) {
     // item: { productId, productName, productSlug, image, variantId, variantName,
     //         optionValueIds, optionsSummary, quantity, unitPrice }
-    setItems((prev) => [...prev, { ...item, cartItemId: crypto.randomUUID() }]);
+    setItems((prev) => {
+      const match = prev.find(
+        (current) =>
+          current.productId === item.productId &&
+          current.variantId === item.variantId &&
+          JSON.stringify(current.optionValueIds ?? []) ===
+            JSON.stringify(item.optionValueIds ?? []) &&
+          current.customizationText === item.customizationText &&
+          current.customizationFileName === item.customizationFileName,
+      );
+
+      if (match) {
+        return prev.map((current) =>
+          current.cartItemId === match.cartItemId
+            ? { ...current, quantity: current.quantity + item.quantity }
+            : current,
+        );
+      }
+
+      return [...prev, { ...item, cartItemId: crypto.randomUUID() }];
+    });
   }
 
   function removeItem(cartItemId) {
@@ -31,8 +51,11 @@ export function CartProvider({ children }) {
   }
 
   function updateQuantity(cartItemId, quantity) {
+    const safeQuantity = Math.max(1, Number(quantity) || 1);
     setItems((prev) =>
-      prev.map((i) => (i.cartItemId === cartItemId ? { ...i, quantity } : i)),
+      prev.map((i) =>
+        i.cartItemId === cartItemId ? { ...i, quantity: safeQuantity } : i,
+      ),
     );
   }
 
