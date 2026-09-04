@@ -1,29 +1,86 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { createWhatsappUrl } from '../components/WhatsappFab';
+import api from '../api/client';
 
 const money = (value) =>
   new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value);
 
 export default function Cart() {
-  const { items, removeItem, updateQuantity, totalPrice } = useCart();
-  const message = [
-    'Olá! Gostaria de fazer este pedido na BeeCraft:',
-    '',
-    ...items.flatMap((item, index) => [
-      `${index + 1}. ${item.productName}${item.variantName ? ` — ${item.variantName}` : ''}`,
-      ...(item.optionsSummary ?? []).map((option) => `   • ${option}`),
-      ...(item.customizationFileName
-        ? [`   • Ficheiro a enviar na conversa: ${item.customizationFileName}`]
-        : []),
-      ...(item.customizationText ? [`   • Texto personalizado: ${item.customizationText}`] : []),
-      `   Quantidade: ${item.quantity} | Unitário: ${money(item.unitPrice)} | Subtotal: ${money(item.unitPrice * item.quantity)}`,
+  const { items, removeItem, updateQuantity, clearCart, totalPrice } = useCart();
+  const [customer, setCustomer] = useState({ name: '', email: '', phone: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
+  const [fallbackWhatsappUrl, setFallbackWhatsappUrl] = useState('');
+
+  function updateCustomer(event) {
+    setCustomer((current) => ({ ...current, [event.target.name]: event.target.value }));
+  }
+
+  function createVerifiedMessage(order) {
+    return [
+      `Olá! Gostaria de confirmar o pedido ${order.orderNumber}:`,
       '',
-    ]),
-    `Total: ${money(totalPrice)}`,
-    '',
-    'Podem confirmar a disponibilidade e os dados para entrega?',
-  ].join('\n');
+      ...order.items.flatMap((item, index) => [
+        `${index + 1}. ${item.productName}${item.variantName ? ` — ${item.variantName}` : ''}`,
+        ...item.options.map((option) => `   • ${option.name}`),
+        ...(item.customizationText ? [`   • Texto: ${item.customizationText}`] : []),
+        ...(item.customizationFileName
+          ? [`   • Ficheiro a enviar: ${item.customizationFileName}`]
+          : []),
+        `   Quantidade: ${item.quantity} | Subtotal: ${money(item.total)}`,
+        '',
+      ]),
+      `Total validado: ${money(order.total)}`,
+      '',
+      'Podem confirmar o prazo de produção e os dados para entrega?',
+    ].join('\n');
+  }
+
+  async function handleCheckout(event) {
+    event.preventDefault();
+    setSubmitting(true);
+    setCheckoutError('');
+    setFallbackWhatsappUrl('');
+    const whatsappWindow = window.open('about:blank', '_blank');
+    if (whatsappWindow) whatsappWindow.opener = null;
+
+    try {
+      const { data: order } = await api.post('/orders', {
+        customer: {
+          name: customer.name.trim(),
+          email: customer.email.trim(),
+          phone: customer.phone.trim() || undefined,
+        },
+        items: items.map((item) => ({
+          productId: item.productId,
+          variantId: item.variantId || undefined,
+          optionValueIds: item.optionValueIds ?? [],
+          quantity: item.quantity,
+          customizationText: item.customizationText || undefined,
+          customizationFileName: item.customizationFileName || undefined,
+        })),
+      });
+      const whatsappUrl = createWhatsappUrl(createVerifiedMessage(order));
+      clearCart();
+      if (whatsappWindow) {
+        whatsappWindow.location.href = whatsappUrl;
+      } else {
+        setFallbackWhatsappUrl(whatsappUrl);
+      }
+    } catch (requestError) {
+      whatsappWindow?.close();
+      const message = requestError.response?.data?.message;
+      setCheckoutError(
+        Array.isArray(message)
+          ? message.join(' ')
+          : message ?? 'Não foi possível validar o pedido. Tente novamente.',
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <main className="container cart-page">
@@ -31,8 +88,19 @@ export default function Cart() {
       <div className="section-head"><h2>O seu carrinho</h2></div>
       {!items.length ? (
         <div className="cart-empty-page">
-          <p>Ainda não adicionou nenhum produto.</p>
-          <Link className="btn primary" to="/">Ver produtos</Link>
+          {fallbackWhatsappUrl ? (
+            <>
+              <p>Pedido criado e validado com sucesso.</p>
+              <a className="btn whatsapp-btn" href={fallbackWhatsappUrl} target="_blank" rel="noreferrer">
+                Abrir WhatsApp
+              </a>
+            </>
+          ) : (
+            <>
+              <p>Ainda não adicionou nenhum produto.</p>
+              <Link className="btn primary" to="/">Ver produtos</Link>
+            </>
+          )}
         </div>
       ) : (
         <div className="cart-layout">
@@ -77,9 +145,29 @@ export default function Cart() {
             <h3>Resumo</h3>
             <div><span>Subtotal</span><strong>{money(totalPrice)}</strong></div>
             <p>Envio e prazo de produção serão confirmados no WhatsApp.</p>
-            <a className="btn whatsapp-btn btn-block" href={createWhatsappUrl(message)} target="_blank" rel="noreferrer">
-              Finalizar pelo WhatsApp
-            </a>
+            <form className="checkout-form" onSubmit={handleCheckout}>
+              <div className="field">
+                <label htmlFor="checkout-name">Nome *</label>
+                <input id="checkout-name" name="name" value={customer.name} onChange={updateCustomer} minLength="2" maxLength="100" autoComplete="name" required />
+              </div>
+              <div className="field">
+                <label htmlFor="checkout-email">Email *</label>
+                <input id="checkout-email" name="email" type="email" value={customer.email} onChange={updateCustomer} maxLength="254" autoComplete="email" required />
+              </div>
+              <div className="field">
+                <label htmlFor="checkout-phone">Telefone</label>
+                <input id="checkout-phone" name="phone" type="tel" value={customer.phone} onChange={updateCustomer} pattern="\+?[0-9 ]{9,20}" autoComplete="tel" placeholder="+351 912 345 678" />
+              </div>
+              {checkoutError && <p className="form-error" role="alert">{checkoutError}</p>}
+              <button className="btn whatsapp-btn btn-block" type="submit" disabled={submitting}>
+                {submitting ? 'A validar pedido...' : 'Finalizar pelo WhatsApp'}
+              </button>
+              {fallbackWhatsappUrl && (
+                <a className="checkout-fallback" href={fallbackWhatsappUrl} target="_blank" rel="noreferrer">
+                  Pedido criado. Abrir WhatsApp
+                </a>
+              )}
+            </form>
           </aside>
         </div>
       )}

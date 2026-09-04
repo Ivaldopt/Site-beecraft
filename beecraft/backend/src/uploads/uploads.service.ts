@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { v2 as cloudinary } from 'cloudinary';
 import { PrismaService } from '../prisma/prisma.service';
 import { Readable } from 'stream';
@@ -7,43 +11,66 @@ import { Readable } from 'stream';
 export class UploadsService {
   constructor(private prisma: PrismaService) {}
 
-  private uploadBuffer(buffer: Buffer): Promise<{ secure_url: string }> {
+  private uploadBuffer(
+    buffer: Buffer,
+  ): Promise<{ secure_url: string; public_id: string }> {
     return new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         { folder: 'beecraft' },
         (error, result) => {
-          if (error || !result) return reject(error);
-          resolve(result as { secure_url: string });
+          if (error || !result) {
+            return reject(
+              new Error(error?.message ?? 'Falha no upload da imagem'),
+            );
+          }
+          resolve({
+            secure_url: result.secure_url,
+            public_id: result.public_id,
+          });
         },
       );
       Readable.from(buffer).pipe(stream);
     });
   }
 
-  async uploadProductImages(
-    productId: string,
-    files: Express.Multer.File[],
-  ) {
+  async uploadProductImages(productId: string, files: Express.Multer.File[]) {
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
     });
 
     if (!product) {
-      throw new Error('Produto não encontrado');
+      throw new NotFoundException('Produto não encontrado');
+    }
+
+    if (!files?.length) {
+      throw new BadRequestException('Envie pelo menos uma imagem');
+    }
+
+    for (const file of files) {
+      if (!this.hasValidImageSignature(file.buffer)) {
+        throw new BadRequestException(
+          `O ficheiro ${file.originalname} não é uma imagem válida`,
+        );
+      }
     }
 
     const existingCount = await this.prisma.productImage.count({
       where: { productId },
     });
 
-    const uploaded: { url: string; alt: string | null; sortOrder: number }[] =
-      [];
+    const uploaded: {
+      url: string;
+      publicId: string;
+      alt: string | null;
+      sortOrder: number;
+    }[] = [];
 
     for (let i = 0; i < files.length; i++) {
       const result = await this.uploadBuffer(files[i].buffer);
 
       uploaded.push({
         url: result.secure_url,
+        publicId: result.public_id,
         alt: product.name,
         sortOrder: existingCount + i,
       });
@@ -53,6 +80,7 @@ export class UploadsService {
       data: uploaded.map((img) => ({
         productId,
         url: img.url,
+        publicId: img.publicId,
         alt: img.alt,
         sortOrder: img.sortOrder,
       })),
@@ -70,7 +98,13 @@ export class UploadsService {
     });
 
     if (!image) {
-      throw new Error('Imagem não encontrada');
+      throw new NotFoundException('Imagem não encontrada');
+    }
+
+    if (image.publicId) {
+      await cloudinary.uploader.destroy(image.publicId, {
+        resource_type: 'image',
+      });
     }
 
     await this.prisma.productImage.delete({
@@ -78,5 +112,23 @@ export class UploadsService {
     });
 
     return { deleted: true };
+  }
+
+  private hasValidImageSignature(buffer: Buffer): boolean {
+    const isJpeg =
+      buffer.length >= 3 &&
+      buffer[0] === 0xff &&
+      buffer[1] === 0xd8 &&
+      buffer[2] === 0xff;
+    const isPng =
+      buffer.length >= 8 &&
+      buffer
+        .subarray(0, 8)
+        .equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+    const isWebp =
+      buffer.length >= 12 &&
+      buffer.toString('ascii', 0, 4) === 'RIFF' &&
+      buffer.toString('ascii', 8, 12) === 'WEBP';
+    return isJpeg || isPng || isWebp;
   }
 }

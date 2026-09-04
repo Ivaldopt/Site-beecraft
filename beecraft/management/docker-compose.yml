@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: beecraft_management
+      POSTGRES_USER: beecraft
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+    volumes: [management_db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U beecraft -d beecraft_management"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://beecraft:${POSTGRES_PASSWORD:-change-me}@db:5432/beecraft_management
+      SECRET_KEY: ${SECRET_KEY:?define SECRET_KEY}
+      CORS_ORIGINS: http://localhost:5174,http://localhost:8080
+      BOOTSTRAP_OWNER_EMAIL: ${BOOTSTRAP_OWNER_EMAIL:-owner@beecraft.pt}
+      BOOTSTRAP_OWNER_PASSWORD: ${BOOTSTRAP_OWNER_PASSWORD:?define BOOTSTRAP_OWNER_PASSWORD}
+    ports: ["8000:8000"]
+    depends_on:
+      db: { condition: service_healthy }
+  web:
+    build: ./frontend
+    ports: ["8080:80"]
+    depends_on: [api]
+volumes:
+  management_db:

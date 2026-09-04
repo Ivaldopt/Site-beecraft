@@ -13,11 +13,8 @@ export default function Header() {
       <header>
         <div className="container nav">
           <Link className="logo" to="/">
-            <svg viewBox="0 0 100 100" fill="none">
-              <path d="M50 32c5 0 7 5 7 9s-2 6-7 6-7-2-7-6 2-9 7-9z" fill="#a9634f" />
-              <path d="M38 48c3-4 8-4 12-1 4-3 9-3 12 1 3 5-1 24-12 28-11-4-15-23-12-28z" fill="#a9634f" />
-            </svg>
-            bee<span>craft</span>
+            
+            Bee<span>craft</span>
           </Link>
 
           <nav className="menu">
