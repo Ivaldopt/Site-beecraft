@@ -26,6 +26,8 @@ export default function Cart() {
         `${index + 1}. ${item.productName}${item.variantName ? ` — ${item.variantName}` : ''}`,
         ...item.options.map((option) => `   • ${option.name}`),
         ...(item.customizationText ? [`   • Texto: ${item.customizationText}`] : []),
+        ...(item.customizationTextColor ? [`   • Cor do texto: ${item.customizationTextColor}`] : []),
+        ...Object.entries(item.customizationDetails ?? {}).filter(([, value]) => value).map(([key, value]) => `   • ${{ orientation: 'Orientação', columns: 'Nº de colunas', startMonth: 'Início', appointmentHours: 'Horário', coverInstructions: 'Capa', elasticColor: 'Elástico', coilColor: 'Espiral' }[key] || key}: ${value}`),
         ...(item.customizationFileName
           ? [`   • Ficheiro a enviar: ${item.customizationFileName}`]
           : []),
@@ -59,6 +61,8 @@ export default function Cart() {
           optionValueIds: item.optionValueIds ?? [],
           quantity: item.quantity,
           customizationText: item.customizationText || undefined,
+          customizationTextColor: item.customizationTextColor || undefined,
+          customizationDetails: item.customizationDetails || undefined,
           customizationFileName: item.customizationFileName || undefined,
         })),
       });
@@ -120,6 +124,8 @@ export default function Cart() {
                     </p>
                   )}
                   {item.customizationText && <p>Texto: {item.customizationText}</p>}
+                  {item.customizationTextColor && <p>Cor do texto: <span className="cart-color" style={{ background: item.customizationTextColor }} /> {item.customizationTextColor}</p>}
+                  {Object.entries(item.customizationDetails ?? {}).filter(([, value]) => value).map(([key, value]) => <p key={key}><b>{{ orientation: 'Orientação', columns: 'Colunas', startMonth: 'Início', appointmentHours: 'Horário', coverInstructions: 'Capa', elasticColor: 'Elástico', coilColor: 'Espiral' }[key] || key}:</b> {value}</p>)}
                   <button
                     className="cart-delete-btn"
                     type="button"

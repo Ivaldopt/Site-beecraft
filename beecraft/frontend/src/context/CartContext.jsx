@@ -31,6 +31,8 @@ export function CartProvider({ children }) {
           JSON.stringify(current.optionValueIds ?? []) ===
             JSON.stringify(item.optionValueIds ?? []) &&
           current.customizationText === item.customizationText &&
+          current.customizationTextColor === item.customizationTextColor &&
+          JSON.stringify(current.customizationDetails ?? {}) === JSON.stringify(item.customizationDetails ?? {}) &&
           current.customizationFileName === item.customizationFileName,
       );
 

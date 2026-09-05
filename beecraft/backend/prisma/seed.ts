@@ -2,6 +2,7 @@ import {
   PrismaClient,
   ProductStatus,
   OptionType,
+  ProductSaleType,
 } from '@prisma/client';
 
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -89,7 +90,7 @@ async function main() {
     where: {
       slug: 'agenda-a5-personalizada',
     },
-    update: {},
+    update: { saleType: ProductSaleType.CUSTOMIZABLE },
     create: {
       name: 'Agenda A5 Personalizada',
       slug: 'agenda-a5-personalizada',
@@ -103,6 +104,7 @@ async function main() {
       basePrice: 25,
 
       status: ProductStatus.ACTIVE,
+      saleType: ProductSaleType.CUSTOMIZABLE,
 
       categoryId: agendas.id,
     },
@@ -266,11 +268,11 @@ async function main() {
           slug: 'encadernacao',
         },
       },
-      update: {},
+      update: { name: 'Tipo de espiral' },
       create: {
         productId: agenda.id,
 
-        name: 'Encadernação',
+        name: 'Tipo de espiral',
 
         slug: 'encadernacao',
 
@@ -285,13 +287,13 @@ async function main() {
   const encadernacoes = [
     {
       id: 'seed-encadernacao-wireo',
-      name: 'Wire-O',
+      name: 'Wire-O duplo',
       value: 'wire-o',
       price: 0,
     },
     {
       id: 'seed-encadernacao-espiral',
-      name: 'Espiral',
+      name: 'Espiral normal',
       value: 'espiral',
       price: 0,
     },
@@ -304,7 +306,12 @@ async function main() {
       where: {
         id: item.id,
       },
-      update: {},
+      update: {
+        name: item.name,
+        value: item.value,
+        priceDelta: item.price,
+        sortOrder: i + 1,
+      },
       create: {
         id: item.id,
 
@@ -423,6 +430,12 @@ async function main() {
 
   const extrasValues = [
     {
+      id: 'seed-extra-cantoneira',
+      name: 'Cantoneiras metálicas',
+      value: 'cantoneira',
+      price: 2.5,
+    },
+    {
       id: 'seed-extra-elastico',
       name: 'Elástico',
       value: 'elastico',
@@ -430,17 +443,15 @@ async function main() {
     },
     {
       id: 'seed-extra-marcador',
-      name: 'Marcador',
+      name: 'Marcador de página',
       value: 'marcador',
       price: 2,
     },
-    {
-      id: 'seed-extra-separadores',
-      name: 'Separadores',
-      value: 'separadores',
-      price: 3,
-    },
   ];
+
+  await prisma.optionValue.deleteMany({
+    where: { id: { in: ['seed-extra-caneta', 'seed-extra-separadores'] } },
+  });
 
   for (let i = 0; i < extrasValues.length; i++) {
     const item = extrasValues[i];
@@ -449,7 +460,12 @@ async function main() {
       where: {
         id: item.id,
       },
-      update: {},
+      update: {
+        name: item.name,
+        value: item.value,
+        priceDelta: item.price,
+        sortOrder: i + 1,
+      },
       create: {
         id: item.id,
 
@@ -467,6 +483,83 @@ async function main() {
   }
 
   console.log('✅ Agenda A5 criada');
+
+  const corDaCapa = await prisma.productOption.upsert({
+    where: {
+      productId_slug: {
+        productId: agenda.id,
+        slug: 'cor-da-capa',
+      },
+    },
+    update: { name: 'Cor da capa', sortOrder: 6 },
+    create: {
+      productId: agenda.id,
+      name: 'Cor da capa',
+      slug: 'cor-da-capa',
+      type: OptionType.SELECT,
+      required: false,
+      sortOrder: 6,
+    },
+  });
+
+  const coresDaCapa = [
+    { id: 'seed-capa-branca', name: 'Branca', value: 'branca' },
+    { id: 'seed-capa-preta', name: 'Preta', value: 'preta' },
+    { id: 'seed-capa-rosa', name: 'Rosa', value: 'rosa' },
+    { id: 'seed-capa-azul', name: 'Azul', value: 'azul' },
+    { id: 'seed-capa-verde', name: 'Verde', value: 'verde' },
+    { id: 'seed-capa-lilas', name: 'Lilás', value: 'lilas' },
+    { id: 'seed-capa-bege', name: 'Bege', value: 'bege' },
+    { id: 'seed-capa-vermelha', name: 'Vermelha', value: 'vermelha' },
+  ];
+
+  for (let i = 0; i < coresDaCapa.length; i++) {
+    const item = coresDaCapa[i];
+    await prisma.optionValue.upsert({
+      where: { id: item.id },
+      update: { name: item.name, value: item.value, sortOrder: i + 1 },
+      create: {
+        id: item.id,
+        optionId: corDaCapa.id,
+        name: item.name,
+        value: item.value,
+        priceDelta: 0,
+        sortOrder: i + 1,
+      },
+    });
+  }
+
+  const agendaMediterranea = await prisma.product.upsert({
+    where: { slug: 'agenda-a5-mediterranea' },
+    update: { saleType: ProductSaleType.READY_MADE },
+    create: {
+      name: 'Agenda A5 Mediterrânea',
+      slug: 'agenda-a5-mediterranea',
+      shortDesc: 'Agenda A5 pronta, com design mediterrâneo e organização semanal.',
+      description: 'Uma agenda pronta a comprar, inspirada nas cores e formas do Mediterrâneo. Ideal para quem quer começar a organizar-se sem configurar a capa.',
+      basePrice: 29.9,
+      status: ProductStatus.ACTIVE,
+      saleType: ProductSaleType.READY_MADE,
+      categoryId: agendas.id,
+    },
+  });
+
+  await prisma.productVariant.upsert({
+    where: { sku: 'AGENDA-A5-MEDITERRANEA' },
+    update: {},
+    create: {
+      productId: agendaMediterranea.id,
+      name: 'A5 Semanal',
+      sku: 'AGENDA-A5-MEDITERRANEA',
+      price: 29.9,
+      width: 148,
+      height: 210,
+      pages: 200,
+      active: true,
+    },
+  });
+
+  console.log('✅ Agenda A5 Mediterrânea pronta criada');
 
   console.log('🌱 Seed concluído!');
 }

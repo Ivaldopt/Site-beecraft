@@ -63,6 +63,10 @@ export class OrdersService {
                 variantName: price.variantName,
                 options: price.options,
                 customizationText: request.customizationText?.trim() || null,
+                customizationTextColor: request.customizationTextColor || null,
+                customizationDetails: request.customizationDetails
+                  ? { ...request.customizationDetails }
+                  : null,
                 customizationFileName: request.customizationFileName || null,
               } satisfies Prisma.InputJsonValue,
             })),
@@ -84,6 +88,8 @@ export class OrdersService {
         unitPrice: price.unitPrice,
         total: price.total,
         customizationText: request.customizationText?.trim() || null,
+        customizationTextColor: request.customizationTextColor || null,
+        customizationDetails: request.customizationDetails || null,
         customizationFileName: request.customizationFileName || null,
       })),
     };

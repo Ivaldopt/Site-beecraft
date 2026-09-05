@@ -17,6 +17,7 @@ export class ProductsService {
         slug: true,
         shortDesc: true,
         basePrice: true,
+        saleType: true,
         images: {
           select: { url: true, alt: true },
           orderBy: { sortOrder: 'asc' },
@@ -38,6 +39,12 @@ export class ProductsService {
           select: { name: true, slug: true },
         },
         images: {
+          select: {
+            id: true,
+            url: true,
+            alt: true,
+            sortOrder: true,
+          },
           orderBy: { sortOrder: 'asc' },
         },
         variants: {

@@ -6,6 +6,7 @@ import {
   IsArray,
   IsEmail,
   IsInt,
+  IsIn,
   IsOptional,
   IsString,
   Matches,
@@ -30,6 +31,41 @@ export class CreateOrderCustomerDto {
   @IsString()
   @Matches(/^\+?[0-9 ]{9,20}$/)
   phone?: string;
+}
+
+export class CustomizationDetailsDto {
+  @IsOptional()
+  @IsIn(['Horizontal', 'Vertical'])
+  orientation?: string;
+
+  @IsOptional()
+  @IsIn(['1', '2', '3', '4', '5', '6'])
+  columns?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  startMonth?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  appointmentHours?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  coverInstructions?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  elasticColor?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  coilColor?: string;
 }
 
 export class CreateOrderItemDto {
@@ -57,6 +93,16 @@ export class CreateOrderItemDto {
   @IsString()
   @MaxLength(100)
   customizationText?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^#[0-9a-fA-F]{6}$/)
+  customizationTextColor?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CustomizationDetailsDto)
+  customizationDetails?: CustomizationDetailsDto;
 
   @IsOptional()
   @IsString()

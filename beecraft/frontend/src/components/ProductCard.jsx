@@ -2,31 +2,15 @@ import { Link } from 'react-router-dom';
 
 export default function ProductCard({ product }) {
   const image = product.images?.[0];
-
+  const price = Number(product.basePrice).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' });
+  const customizable = product.saleType !== 'READY_MADE';
   return (
-    <div className="card">
-      <div className="card-img">
-        {image ? (
-          <img src={image.url} alt={image.alt ?? product.name} />
-        ) : (
-          <div className="fake-product" style={{ background: 'var(--terracotta)' }}>
-            {product.name}
-          </div>
-        )}
-        <button className="fav-toggle" aria-label="Favoritar">
-          <svg viewBox="0 0 24 24">
-            <path d="M12 21s-7-4.5-9.5-9C.8 8.2 2.5 4 6.5 4 9 4 11 5.7 12 7.3 13 5.7 15 4 17.5 4 21.5 4 23.2 8.2 21.5 12 19 16.5 12 21 12 21z" />
-          </svg>
-        </button>
-      </div>
-
-      <div className="card-body">
-        <h3>{product.name}</h3>
-        <div className="price">€{Number(product.basePrice).toFixed(2)}</div>
-        <Link className="btn primary btn-block" to={`/produto/${product.slug}`}>
-          Personalizar
-        </Link>
-      </div>
-    </div>
+    <article className="card">
+      <Link className="card-img" to={`/produto/${product.slug}`}>
+        <span className={`product-type-badge ${customizable ? 'custom' : 'ready'}`}>{customizable ? 'Personalizável' : 'Pronto a comprar'}</span>
+        {image ? <img src={image.url} alt={image.alt ?? product.name} loading="lazy" decoding="async" /> : <div className="fake-product" style={{ background: 'var(--terracotta)' }}>{product.name}</div>}
+      </Link>
+      <div className="card-body"><h3>{product.name}</h3><div className="price">{customizable ? 'Desde ' : ''}{price}</div><Link className="btn primary btn-block" to={customizable ? `/personalizar/${product.slug}` : `/produto/${product.slug}`}>{customizable ? 'Personalizar' : 'Comprar agora'}</Link></div>
+    </article>
   );
 }

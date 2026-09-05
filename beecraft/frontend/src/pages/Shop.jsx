@@ -3,9 +3,9 @@ import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api/client';
 import ProductCard from '../components/ProductCard';
 
-export default function Shop() {
+export default function Shop({ categoryOverride = '', title = 'Loja BeeCraft' }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const category = searchParams.get('categoria') ?? '';
+  const category = categoryOverride || searchParams.get('categoria') || '';
   const [query, setQuery] = useState('');
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
@@ -47,7 +47,7 @@ export default function Shop() {
     const nextCategory = event.target.value;
     setLoading(true);
     setError('');
-    setSearchParams(nextCategory ? { categoria: nextCategory } : {});
+    if (!categoryOverride) setSearchParams(nextCategory ? { categoria: nextCategory } : {});
   }
 
   return (
@@ -57,7 +57,7 @@ export default function Shop() {
         <div className="shop-heading">
           <div>
             <div className="eyebrow">Papelaria personalizada</div>
-            <h1>Loja BeeCraft</h1>
+            <h1>{title}</h1>
             <p>Escolha uma peça e personalize cada detalhe.</p>
           </div>
           <div className="shop-controls" role="search">
@@ -67,7 +67,7 @@ export default function Shop() {
             </div>
             <div className="field">
               <label htmlFor="shop-category">Categoria</label>
-              <select id="shop-category" value={category} onChange={selectCategory}>
+              <select id="shop-category" value={category} onChange={selectCategory} disabled={Boolean(categoryOverride)}>
                 <option value="">Todas as categorias</option>
                 {categories.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}
               </select>

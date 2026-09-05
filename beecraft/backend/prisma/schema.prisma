@@ -17,6 +17,11 @@ enum ProductStatus {
   INACTIVE
 }
 
+enum ProductSaleType {
+  CUSTOMIZABLE
+  READY_MADE
+}
+
 enum OptionType {
   SELECT
   TEXT
@@ -62,6 +67,7 @@ model Product {
   shortDesc   String?
 
   status ProductStatus @default(DRAFT)
+  saleType ProductSaleType @default(CUSTOMIZABLE)
 
   basePrice Decimal @db.Decimal(10, 2)
 
