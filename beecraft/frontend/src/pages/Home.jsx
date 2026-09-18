@@ -4,6 +4,19 @@ import api from '../api/client';
 import ProductCard from '../components/ProductCard';
 import { createWhatsappUrl } from '../components/WhatsappFab';
 
+const frequentlyAskedQuestions = [
+  ['Como funciona a personalização?', 'Escolha o produto, selecione formato, capa, interior e acabamentos disponíveis. Nos produtos compatíveis, o resultado aparece no preview enquanto personaliza.'],
+  ['Posso enviar uma fotografia ou logótipo?', 'Sim. Pode enviar ficheiros JPG, PNG ou WEBP diretamente na página do produto. Recomendamos uma imagem nítida e com boa resolução.'],
+  ['O preview mostra exatamente o produto final?', 'O preview é uma representação aproximada da capa e dos acabamentos. Antes da produção, confirmamos consigo qualquer ajuste necessário na arte.'],
+  ['Quanto tempo demora a produção?', 'O prazo depende do produto, da quantidade e da personalização. A estimativa é apresentada no produto e confirmada antes do pagamento.'],
+  ['Quais são as formas de pagamento?', 'As formas disponíveis são confirmadas no atendimento, incluindo MB Way e transferência bancária. O pagamento só é combinado depois de revermos o pedido.'],
+  ['Fazem envios?', 'Sim. Enviamos para Portugal e Espanha. O custo e a previsão de entrega são informados antes da confirmação da encomenda.'],
+  ['Posso alterar o pedido depois de o enviar?', 'Pode pedir alterações enquanto a produção ainda não tiver começado. Depois dessa etapa, algumas alterações podem não ser possíveis.'],
+  ['Produtos personalizados podem ser devolvidos?', 'Se existir defeito ou dano, fale connosco assim que receber a encomenda. Produtos feitos segundo escolhas do cliente podem estar abrangidos por exceções ao direito de livre resolução.'],
+  ['Aceitam pedidos para empresas e eventos?', 'Sim. Produzimos agendas, cadernos, brindes e papelaria para equipas, clientes, casamentos e eventos. Preparamos um orçamento conforme produto, quantidade e prazo.'],
+  ['Existe quantidade mínima?', 'Produtos individuais podem ser pedidos a partir de uma unidade. Para projetos empresariais ou eventos, a quantidade mínima depende do tipo de produto e é confirmada no orçamento.'],
+];
+
 export default function Home() {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
@@ -82,6 +95,18 @@ export default function Home() {
 
       {error && <div className="container form-error home-error">{error}</div>}
 
+      <section className="home-services"><div className="container">
+        <div className="section-head"><div><div className="eyebrow">Tudo o que criamos</div><h2>Serviços para momentos e marcas</h2></div><Link className="link" to="/servicos">Conhecer todos os serviços</Link></div>
+        <div className="home-service-grid">
+          <Link to="/servicos/agendas-organizacao"><span>01</span><h3>Agendas & organização</h3><p>Agendas, planners, cadernos e blocos.</p></Link>
+          <Link to="/servicos/albuns-memorias"><span>02</span><h3>Álbuns & memórias</h3><p>Álbuns personalizados para cada história.</p></Link>
+          <Link to="/servicos/papelaria-infantil"><span>03</span><h3>Papelaria infantil</h3><p>Livros, atividades, etiquetas e lembranças.</p></Link>
+          <Link to="/servicos/eventos"><span>04</span><h3>Papelaria para eventos</h3><p>Convites, menus, brindes e materiais personalizados.</p></Link>
+        </div>
+      </div></section>
+
+      <section className="home-works-cta"><div className="container home-works-cta-inner"><div><div className="eyebrow">Novo na BeeCraft</div><h2>Kits completos para o seu negócio</h2><p>Cartões, menus, vouchers, ímanes e materiais de marca reunidos num único pedido personalizável.</p></div><Link className="btn primary" to="/nossos-trabalhos">Conhecer nossos trabalhos</Link></div></section>
+
       <section id="categorias"><div className="container">
         <div className="section-head"><div><div className="eyebrow">Encontre a sua peça</div><h2>Comprar por categoria</h2></div><p>Comece pelo tipo de produto e personalize os detalhes depois.</p></div>
         <div className="categories">{categories.map((category) => <Link key={category.id} className="cat" to={`/loja?categoria=${category.slug}`}><strong>{category.name}</strong><span>{category._count?.products ?? 0} produto(s)</span></Link>)}</div>
@@ -115,6 +140,18 @@ export default function Home() {
           <button className="btn primary btn-block" type="submit">Pedir orçamento pelo WhatsApp</button>
           <p className="b2b-privacy">Usaremos estes dados apenas para responder ao seu pedido.</p>
         </form>
+      </div></section>
+
+      <section className="home-faq" id="perguntas-frequentes"><div className="container home-faq-grid">
+        <div className="home-faq-intro">
+          <div className="eyebrow">Estamos aqui para ajudar</div>
+          <h2>Perguntas frequentes</h2>
+          <p>Encontre respostas sobre personalização, encomendas, pagamento e entrega.</p>
+          <div className="faq-help"><strong>Ainda tem uma dúvida?</strong><span>Fale diretamente connosco e ajudamos a preparar o seu pedido.</span><a className="btn secondary" href={createWhatsappUrl('Olá! Tenho uma dúvida sobre os produtos e serviços BeeCraft.')} target="_blank" rel="noreferrer">Perguntar no WhatsApp</a></div>
+        </div>
+        <div className="faq-accordion">
+          {frequentlyAskedQuestions.map(([question, answer], index) => <details key={question} open={index === 0}><summary><span>{question}</span><b>+</b></summary><p>{answer}</p></details>)}
+        </div>
       </div></section>
 
       <section className="newsletter"><div className="container newsletter-inner"><div><div className="eyebrow">Novidades BeeCraft</div><h2>Inspiração no seu email</h2><p>Receba novidades e uma oferta para a primeira compra.</p></div>{subscribed ? <strong>Obrigada! O seu interesse ficou registado.</strong> : <form onSubmit={(event) => { event.preventDefault(); setSubscribed(true); }}><label className="sr-only" htmlFor="newsletter-email">Email</label><input id="newsletter-email" type="email" required placeholder="O seu melhor email" /><button className="btn primary">Quero receber</button></form>}</div></section>

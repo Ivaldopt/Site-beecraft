@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api/client';
 import ProductCard from '../components/ProductCard';
+import magnetsHero from '../assets/magnets-hero.jpg';
 
-export default function Shop({ categoryOverride = '', title = 'Loja BeeCraft' }) {
+export default function Shop({ categoryOverride = '', title = 'Loja BeeCraft', hero = '' }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const category = categoryOverride || searchParams.get('categoria') || '';
   const [query, setQuery] = useState('');
@@ -52,12 +53,13 @@ export default function Shop({ categoryOverride = '', title = 'Loja BeeCraft' })
 
   return (
     <main className="shop-page">
+      {hero === 'magnets' && <section className="magnets-shop-hero"><img src={magnetsHero} alt="Íman personalizado BeeCraft em azul pastel" /><div className="container magnets-shop-hero-content"><div className="eyebrow">Ímanes personalizados</div><h1>Pequenos detalhes.<br />Grandes memórias.</h1><p>Transforme fotografias, mensagens e marcas em peças únicas.</p><Link className="btn primary" to="/personalizar/iman-button-personalizado">Personalizar agora</Link></div></section>}
       <div className="container">
         <div className="breadcrumb"><Link to="/">Início</Link> / Loja</div>
         <div className="shop-heading">
           <div>
             <div className="eyebrow">Papelaria personalizada</div>
-            <h1>{title}</h1>
+            {hero ? <h2>{title}</h2> : <h1>{title}</h1>}
             <p>Escolha uma peça e personalize cada detalhe.</p>
           </div>
           <div className="shop-controls" role="search">

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { createWhatsappUrl } from '../components/WhatsappFab';
 import api from '../api/client';
+import { trackCatalogEvent } from '../utils/analytics';
 
 const money = (value) =>
   new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value);
@@ -67,6 +68,7 @@ export default function Cart() {
         })),
       });
       const whatsappUrl = createWhatsappUrl(createVerifiedMessage(order));
+      trackCatalogEvent('WHATSAPP_CLICK');
       clearCart();
       if (whatsappWindow) {
         whatsappWindow.location.href = whatsappUrl;

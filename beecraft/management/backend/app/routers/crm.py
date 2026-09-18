@@ -33,6 +33,16 @@ def create_customer(payload: CustomerCreate, db: DB, _: CurrentUser):
     return customer
 
 
+@router.delete("/{customer_id}", status_code=204)
+def delete_customer(customer_id: uuid.UUID, db: DB, _: CurrentUser):
+    customer = db.get(Customer, customer_id)
+    if not customer:
+        raise HTTPException(404, "Cliente não encontrado")
+    if db.scalar(select(func.count(Sale.id)).where(Sale.customer_id == customer_id)):
+        raise HTTPException(409, "Este cliente possui vendas e não pode ser eliminado; marque-o como inativo.")
+    db.delete(customer); db.commit()
+
+
 @router.get("/{customer_id}")
 def customer_detail(customer_id: uuid.UUID, db: DB, _: CurrentUser):
     customer = db.scalar(

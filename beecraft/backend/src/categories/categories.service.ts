@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { SaveCategoryDto } from './dto/save-category.dto';
 
 @Injectable()
 export class CategoriesService {
@@ -14,15 +15,20 @@ export class CategoriesService {
         slug: true,
         description: true,
         image: true,
+        sortOrder: true,
         _count: {
           select: {
             products: { where: { status: 'ACTIVE' } },
           },
         },
       },
-      orderBy: { name: 'asc' },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });
   }
+
+  findAllAdmin() { return this.prisma.category.findMany({ include: { _count: { select: { products: true } } }, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }); }
+  create(dto: SaveCategoryDto) { return this.prisma.category.create({ data: { ...dto, active: dto.active ?? true } }); }
+  update(id: string, dto: SaveCategoryDto) { return this.prisma.category.update({ where: { id }, data: dto }); }
 
   async findBySlug(slug: string) {
     const category = await this.prisma.category.findUnique({

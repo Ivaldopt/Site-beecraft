@@ -3,6 +3,11 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import api from '../api/client';
 import { useCart } from '../context/CartContext';
 import AgendaPreviewCanvas from '../components/AgendaPreviewCanvas';
+import NotebookInteriorCanvas from '../components/NotebookInteriorCanvas';
+import MagnetPreviewCanvas from '../components/MagnetPreviewCanvas';
+import KitPreview from '../components/KitPreview';
+import { findWorkCategory } from '../data/worksCatalog';
+import { trackCatalogEvent } from '../utils/analytics';
 
 const money = (value) =>
   new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value);
@@ -36,6 +41,7 @@ export default function ProductDetail() {
     api.get(`/products/${slug}`)
       .then(({ data }) => {
         setProduct(data);
+        trackCatalogEvent('PRODUCT_VIEW', data.slug);
         setVariantId(data.variants?.[0]?.id ?? '');
         setSelected(Object.fromEntries(
           data.options
@@ -63,9 +69,14 @@ export default function ProductDetail() {
       .map((value) => ({ optionSlug: option.slug, value: value.name })),
   ) ?? [], [product, optionValueIds]);
   const customizable = product?.saleType !== 'READY_MADE';
+  const isNotebook = product?.slug === 'caderno-personalizado';
+  const isMagnet = product?.slug === 'iman-button-personalizado';
+  const workCategoryEntry = findWorkCategory(product?.slug);
+  const isBusinessProduct = Boolean(workCategoryEntry) || product?.slug?.startsWith('kit-') || ['servico-design-grafico', 'criacao-de-site'].includes(product?.slug);
   const extrasOption = product?.options.find((option) => option.slug === 'extras');
   const bindingOption = product?.options.find((option) => option.slug === 'encadernacao');
   const coverColorOption = product?.options.find((option) => option.slug === 'cor-da-capa');
+  const notebookInterior = previewSelections.find((item) => item.optionSlug === 'miolo-caderno')?.value ?? '';
   const startMonths = useMemo(() => Array.from({ length: 13 }, (_, offset) => {
     const start = new Date(new Date().getFullYear(), new Date().getMonth() + offset, 1);
     const end = new Date(start.getFullYear() + 1, start.getMonth(), 0);
@@ -94,6 +105,8 @@ export default function ProductDetail() {
       setCustomizationPreview('');
       setCustomizationText('');
     }
+    if (isNotebook && option.slug === 'miolo-caderno') setGalleryMode('interior');
+    if (isNotebook && ['personalizacao', 'cor-da-capa'].includes(option.slug)) setGalleryMode('preview');
     setSelected((current) => {
       const values = current[option.id] ?? [];
       const isMultiple = option.slug === 'extras';
@@ -153,6 +166,7 @@ export default function ProductDetail() {
       quantity,
       unitPrice: price.unitPrice,
     });
+    trackCatalogEvent('ADD_TO_CART', product.slug);
     navigate('/carrinho');
   }
 
@@ -160,13 +174,15 @@ export default function ProductDetail() {
   if (!product) return <main className="container page-state">A carregar produto...</main>;
 
   return (
-    <main className="container">
+    <main className={`container ${workCategoryEntry ? 'work-product-page' : ''}`}>
+      {workCategoryEntry && <section className="product-family-banner"><img src={workCategoryEntry[1].image} alt={`Produtos para ${workCategoryEntry[1].title}`} /><div><div className="eyebrow">{workCategoryEntry[1].title}</div><h2>Crie uma peça só sua.</h2><p>Escolha os detalhes e veja a personalização antes de pedir.</p></div></section>}
       <div className="breadcrumb"><Link to="/">Início</Link> / {product.category.name} / {product.name}</div>
       <section className="pdp">
         <div className="pdp-grid">
           <div className="pdp-gallery">
             <div className="pdp-view-switch" role="tablist" aria-label="Visualização do produto">
-              <button type="button" className={galleryMode === 'preview' ? 'active' : ''} onClick={() => setGalleryMode('preview')}>Preview ao vivo</button>
+              <button type="button" className={galleryMode === 'preview' ? 'active' : ''} onClick={() => setGalleryMode('preview')}>{isNotebook ? 'Capa' : 'Preview ao vivo'}</button>
+              {isNotebook && <button type="button" className={galleryMode === 'interior' ? 'active' : ''} onClick={() => setGalleryMode('interior')}>Interior</button>}
               {product.images?.length > 0 && <button type="button" className={galleryMode === 'photos' ? 'active' : ''} onClick={() => setGalleryMode('photos')}>Fotografias</button>}
             </div>
             {galleryMode === 'photos' && product.images?.length ? (
@@ -174,6 +190,12 @@ export default function ProductDetail() {
                 <div className="pdp-main-img"><img src={product.images[activeImage].url} alt={product.images[activeImage].alt || product.name} /></div>
                 <div className="pdp-thumbs">{product.images.map((image, index) => <button type="button" key={image.id || image.url} className={`pdp-thumb ${activeImage === index ? 'active' : ''}`} onClick={() => setActiveImage(index)}><img src={image.url} alt={image.alt || `${product.name} ${index + 1}`} loading="lazy" /></button>)}</div>
               </div>
+            ) : isNotebook && galleryMode === 'interior' ? (
+              <NotebookInteriorCanvas interior={notebookInterior} format={product.variants.find((variant) => variant.id === variantId)?.name ?? 'A5'} />
+            ) : isBusinessProduct ? (
+              <KitPreview name={product.name} slug={product.slug} image={customizationPreview} text={customizationText} selections={previewSelections} />
+            ) : isMagnet ? (
+              <MagnetPreviewCanvas customization={selectedCustomization?.value?.toLowerCase() ?? ''} text={customizationText} textColor={textColor} image={customizationPreview} selections={previewSelections} />
             ) : customizable ? (
               <AgendaPreviewCanvas productName={product.name} customization={selectedCustomization?.value?.toLowerCase() ?? ''} text={customizationText} textColor={textColor} image={customizationPreview} selections={previewSelections} details={customDetails} />
             ) : (
@@ -193,7 +215,28 @@ export default function ProductDetail() {
               <div><b>03</b><span><strong>Acabamento cuidado</strong>Preparado para durar</span></div>
             </div>
 
-            {customizable && <section className="cover-configurator" aria-labelledby="cover-configurator-title">
+            {customizable && (isBusinessProduct ? <section className="cover-configurator business-configurator" aria-labelledby="cover-configurator-title">
+              <div className="configurator-heading"><span>Crie connosco</span><h2 id="cover-configurator-title">Personalize o projeto</h2><p>Use a sua arte ou peça apoio à BeeCraft. Confirmamos sempre o resultado antes de produzir.</p></div>
+              <fieldset className="cover-mode-choice"><legend>Como quer começar?</legend>
+                <button type="button" className={selectedCustomization?.value === 'logo' ? 'selected' : ''} onClick={() => chooseCoverMode('logo')}><b>◇</b><span>Enviar logótipo / arte</span></button>
+                <button type="button" className={selectedCustomization?.value === 'nome' ? 'selected' : ''} onClick={() => chooseCoverMode('nome')}><b>Aa</b><span>Nome da marca</span></button>
+                <button type="button" className={selectedCustomization?.value === 'apoio-design' ? 'selected' : ''} onClick={() => chooseCoverMode('apoio-design')}><b>✦</b><span>Preciso de design</span></button>
+              </fieldset>
+              <div className="configurator-fields"><label className="full"><span>Conte-nos a sua ideia</span><textarea rows="4" maxLength="1000" placeholder="Objetivo, cores, público e informações que devem aparecer..." value={customDetails.coverInstructions} onChange={(event) => setCustomDetails({ ...customDetails, coverInstructions: event.target.value })} /></label></div>
+            </section> : isNotebook ? <section className="cover-configurator notebook-configurator" aria-labelledby="cover-configurator-title">
+              <div className="configurator-heading"><span>Personalize</span><h2 id="cover-configurator-title">O seu caderno</h2><p>Escolha uma capa de cor lisa ou envie uma imagem para preencher toda a capa.</p></div>
+              <fieldset className="cover-mode-choice"><legend>Design da capa</legend>
+                <button type="button" className={selectedCustomization?.value === 'cor-lisa' ? 'selected' : ''} onClick={() => chooseCoverMode('cor-lisa')}><b>●</b><span>Cor lisa</span></button>
+                <button type="button" className={selectedCustomization?.value === 'foto' ? 'selected' : ''} onClick={() => chooseCoverMode('foto')}><b>▣</b><span>Imagem na capa</span></button>
+              </fieldset>
+            </section> : isMagnet ? <section className="cover-configurator magnet-configurator" aria-labelledby="cover-configurator-title">
+              <div className="configurator-heading"><span>Personalize</span><h2 id="cover-configurator-title">O seu íman button</h2><p>Crie um íman com fotografia, logótipo ou uma mensagem especial.</p></div>
+              <fieldset className="cover-mode-choice"><legend>Design do íman</legend>
+                <button type="button" className={selectedCustomization?.value === 'nome' ? 'selected' : ''} onClick={() => chooseCoverMode('nome')}><b>Aa</b><span>Nome ou frase</span></button>
+                <button type="button" className={selectedCustomization?.value === 'foto' ? 'selected' : ''} onClick={() => chooseCoverMode('foto')}><b>▣</b><span>Fotografia</span></button>
+                <button type="button" className={['logo', 'logotipo'].includes(selectedCustomization?.value) ? 'selected' : ''} onClick={() => chooseCoverMode('logo')}><b>◇</b><span>Logótipo</span></button>
+              </fieldset>
+            </section> : <section className="cover-configurator" aria-labelledby="cover-configurator-title">
               <div className="configurator-heading"><span>Personalize</span><h2 id="cover-configurator-title">A capa e o interior</h2><p>Escolha as opções para adaptar a agenda ao seu dia a dia.</p></div>
               <fieldset className="compact-choice"><legend>Orientação</legend>{['Horizontal', 'Vertical'].map((value) => <label key={value}><input type="radio" name="orientation" checked={customDetails.orientation === value} onChange={() => setCustomDetails({ ...customDetails, orientation: value })} /> {value}</label>)}</fieldset>
               <fieldset className="cover-mode-choice"><legend>Design da capa</legend>
@@ -207,10 +250,10 @@ export default function ProductDetail() {
                 <label className="full"><span>Horas para marcações</span><input maxLength="100" placeholder="Ex.: das 6h às 21h" value={customDetails.appointmentHours} onChange={(event) => setCustomDetails({ ...customDetails, appointmentHours: event.target.value })} /></label>
                 <label className="full"><span>Como quer a capa?</span><input maxLength="500" placeholder="Descreva o tema, cores ou referência desejada" value={customDetails.coverInstructions} onChange={(event) => setCustomDetails({ ...customDetails, coverInstructions: event.target.value })} /></label>
               </div>
-            </section>}
+            </section>)}
 
             {product.variants.length > 1 && <>
-              <div className="pdp-section-title">Modelo</div>
+              <div className="pdp-section-title">{isNotebook ? 'Formato' : isMagnet ? 'Tamanho' : isBusinessProduct ? 'Quantidade / pacote' : 'Modelo'}</div>
               <select className="pdp-select" value={variantId} onChange={(event) => setVariantId(event.target.value)}>
                 {product.variants.map((variant) => <option key={variant.id} value={variant.id}>{variant.name}</option>)}
               </select>
@@ -252,9 +295,9 @@ export default function ProductDetail() {
             </details>}
 
             {customizable && coverColorOption && <details className="configurator-step" open>
-              <summary><b>●</b><span>Cor da capa</span><small>Escolher</small></summary>
-              <div className="pdp-section-title">Cor da capa</div>
-              <div className="cover-color-swatches">{coverColorOption.values.map((value) => { const checked = (selected[coverColorOption.id] ?? []).includes(value.id); return <button key={value.id} type="button" className={checked ? 'selected' : ''} style={{ backgroundColor: COVER_COLORS[value.value] ?? '#ddd' }} onClick={() => choose(coverColorOption, value.id)} aria-label={`Cor da capa: ${value.name}`} title={value.name} />; })}</div>
+              <summary><b>●</b><span>{isMagnet ? 'Cor de fundo' : 'Cor da capa'}</span><small>Escolher</small></summary>
+              <div className="pdp-section-title">{isMagnet ? 'Cor de fundo' : 'Cor da capa'}</div>
+              <div className="cover-color-swatches">{coverColorOption.values.map((value) => { const checked = (selected[coverColorOption.id] ?? []).includes(value.id); return <button key={value.id} type="button" className={checked ? 'selected' : ''} style={{ backgroundColor: COVER_COLORS[value.value] ?? '#ddd' }} onClick={() => choose(coverColorOption, value.id)} aria-label={`${isMagnet ? 'Cor de fundo' : 'Cor da capa'}: ${value.name}`} title={value.name} />; })}</div>
             </details>}
 
             {needsFile && (

@@ -2,6 +2,21 @@
 
 ERP interno separado da loja pública. Inclui Dashboard, vendas, compras, stock/Kardex, ficha técnica e preços, CRM, CSV e recibos PDF.
 
+## Ligação segura ao catálogo da loja
+
+O módulo **Catálogo da loja** comunica com o backend NestJS sem expor a chave administrativa no navegador. Defina a mesma chave nos dois ficheiros de ambiente:
+
+```env
+# beecraft/backend/.env
+ADMIN_API_KEY=gere-uma-chave-longa-e-aleatoria
+
+# beecraft/management/.env
+STORE_ADMIN_KEY=use-exatamente-a-mesma-chave
+STORE_API_URL=http://host.docker.internal:3000
+```
+
+Depois, reinicie o backend da loja e reconstrua o ADM.
+
 ## Início rápido com Docker
 
 1. Copie `.env.example` para `.env` e altere todas as senhas.

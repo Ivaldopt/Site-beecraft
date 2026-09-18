@@ -18,12 +18,17 @@ export default function AgendaPreviewCanvas({ productName, customization, text, 
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
+    const canvasContext = canvas.getContext('2d');
     const width = 360;
     let cancelled = false;
 
     function draw(templateImage, uploadedImage) {
       if (cancelled) return;
+      const horizontal = details.orientation === 'Horizontal';
+      const renderCanvas = horizontal ? document.createElement('canvas') : canvas;
+      renderCanvas.width = 360;
+      renderCanvas.height = 480;
+      const context = renderCanvas.getContext('2d');
       context.clearRect(0, 0, 360, 480);
       context.fillStyle = '#fff';
       context.fillRect(0, 0, 360, 480);
@@ -165,6 +170,21 @@ export default function AgendaPreviewCanvas({ productName, customization, text, 
       const planning = [details.orientation, details.columns ? `${details.columns} coluna${details.columns === '1' ? '' : 's'}` : ''].filter(Boolean).join(' · ');
       context.font = '700 9px Inter, Arial, sans-serif';
       context.fillText(planning, width / 2, 451, 260);
+
+      if (horizontal) {
+        canvasContext.clearRect(0, 0, 360, 480);
+        canvasContext.fillStyle = '#fff';
+        canvasContext.fillRect(0, 0, 360, 480);
+        // Transforma o molde vertical numa agenda em formato paisagem,
+        // mantendo a encadernação do lado esquerdo.
+        canvasContext.drawImage(renderCanvas, 42, 58, 278, 332, 8, 92, 344, 260);
+        canvasContext.fillStyle = '#665e57';
+        canvasContext.textAlign = 'center';
+        canvasContext.font = '600 10px Inter, Arial, sans-serif';
+        canvasContext.fillText(selectionLabel, width / 2, 391, 320);
+        canvasContext.font = '700 10px Inter, Arial, sans-serif';
+        canvasContext.fillText(planning, width / 2, 413, 280);
+      }
     }
 
     const templateImage = new Image();

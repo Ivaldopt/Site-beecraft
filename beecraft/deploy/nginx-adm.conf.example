@@ -1,0 +1,21 @@
+# Adicione estes blocos ao mesmo `server` HTTPS que já publica a loja BeeCraft.
+# O proxy principal precisa conseguir resolver os serviços management-web e management-api.
+
+location = /adm {
+    return 301 /adm/;
+}
+
+location /adm/ {
+    proxy_pass http://management-web:80;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+}
+
+location /adm-api/ {
+    proxy_pass http://management-api:8000/api/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    client_max_body_size 12m;
+}

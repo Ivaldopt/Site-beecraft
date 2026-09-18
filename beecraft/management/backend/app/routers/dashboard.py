@@ -5,7 +5,7 @@ from fastapi import APIRouter, Query
 from sqlalchemy import case, func, select
 
 from ..deps import DB, CurrentUser
-from ..models import InventoryItem, MovementType, Product, Sale, SaleItem, StockMovement
+from ..models import BusinessCost, InventoryItem, MovementType, Product, Sale, SaleItem, StockMovement
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
@@ -36,6 +36,11 @@ def dashboard(
     active_customers = db.scalar(
         select(func.count(func.distinct(Sale.customer_id))).where(
             Sale.sold_at >= now - timedelta(days=90), Sale.customer_id.is_not(None)
+        )
+    )
+    operating_costs = db.scalar(
+        select(func.coalesce(func.sum(BusinessCost.amount), 0)).where(
+            BusinessCost.reference_month == month_start.date()
         )
     )
     series = (
@@ -110,7 +115,8 @@ def dashboard(
     return {
         "indicators": {
             "monthly_revenue": revenue,
-            "monthly_profit": summary["profit"],
+            "monthly_profit": Decimal(summary["profit"]) - Decimal(operating_costs or 0),
+            "monthly_operating_costs": operating_costs or 0,
             "average_ticket": revenue / count if count else 0,
             "active_customers": active_customers or 0,
         },

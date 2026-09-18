@@ -52,6 +52,7 @@ model Category {
   description String?
   image       String?
   active      Boolean @default(true)
+  sortOrder   Int     @default(0)
 
   products Product[]
 

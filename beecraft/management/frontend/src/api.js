@@ -3,10 +3,11 @@ const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
 export async function api(path, options = {}) {
   const token = localStorage.getItem("beecraft-management-token");
   const isForm = options.body instanceof URLSearchParams;
+  const isMultipart = options.body instanceof FormData;
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
-      ...(options.body
+      ...(options.body && !isMultipart
         ? {
             "Content-Type": isForm
               ? "application/x-www-form-urlencoded"

@@ -63,3 +63,8 @@ def create_user(payload: UserCreate, db: DB, _: Owner) -> User:
     db.commit()
     db.refresh(user)
     return user
+
+
+@router.get("/users", response_model=list[UserOut])
+def list_users(db: DB, _: Owner):
+    return db.scalars(select(User).order_by(User.name)).all()

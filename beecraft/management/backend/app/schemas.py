@@ -165,6 +165,11 @@ class SaleCreate(BaseModel):
     items: list[SaleLineCreate] = Field(min_length=1, max_length=100)
 
 
+class ProductionUpdate(BaseModel):
+    status: str = Field(pattern="^(ARTWORK|OPEN|PRODUCTION|PICKUP|SHIPPING|DELIVERED|PAYMENT)$")
+    production_date: date | None = None
+
+
 class PurchaseLineCreate(BaseModel):
     inventory_item_id: uuid.UUID
     quantity: Decimal = Field(gt=0)

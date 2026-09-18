@@ -1,0 +1,24 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm ci --prefix frontend && corepack enable && pnpm --dir management/frontend install --frozen-lockfile",
+  "buildCommand": "npm run build:vercel",
+  "outputDirectory": "frontend/dist",
+  "redirects": [
+    {
+      "source": "/adm",
+      "destination": "/adm/",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/adm/:path*",
+      "destination": "/adm/index.html"
+    },
+    {
+      "source": "/:path*",
+      "destination": "/index.html"
+    }
+  ]
+}

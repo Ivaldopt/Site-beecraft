@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5174"
     bootstrap_owner_email: str | None = None
     bootstrap_owner_password: str | None = None
+    store_api_url: str = "http://host.docker.internal:3000"
+    store_admin_key: str | None = None
 
     @property
     def allowed_origins(self) -> list[str]:

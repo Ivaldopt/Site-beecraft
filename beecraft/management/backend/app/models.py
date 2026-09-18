@@ -49,6 +49,18 @@ class PaymentMethod(str, enum.Enum):
     OTHER = "OTHER"
 
 
+class CatalogEventType(str, enum.Enum):
+    PAGE_VIEW = "PAGE_VIEW"
+    PRODUCT_VIEW = "PRODUCT_VIEW"
+    ADD_TO_CART = "ADD_TO_CART"
+    WHATSAPP_CLICK = "WHATSAPP_CLICK"
+
+
+class BusinessCostType(str, enum.Enum):
+    FIXED = "FIXED"
+    VARIABLE = "VARIABLE"
+
+
 class TimestampMixin:
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
@@ -196,6 +208,8 @@ class Sale(TimestampMixin, Base):
     total_cost: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     net_profit: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    production_status: Mapped[str] = mapped_column(String(30), default="OPEN", index=True)
+    production_date: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
     customer: Mapped[Customer | None] = relationship(back_populates="sales")
     items: Mapped[list["SaleItem"]] = relationship(
         back_populates="sale", cascade="all, delete-orphan"
@@ -215,6 +229,48 @@ class SaleItem(Base):
     configuration: Mapped[dict] = mapped_column(JSONB, default=dict)
     sale: Mapped[Sale] = relationship(back_populates="items")
     product: Mapped[Product] = relationship()
+
+
+class CatalogEvent(Base):
+    __tablename__ = "catalog_events"
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    event_type: Mapped[CatalogEventType] = mapped_column(Enum(CatalogEventType), index=True)
+    visitor_id: Mapped[str] = mapped_column(String(64), index=True)
+    product_slug: Mapped[str | None] = mapped_column(String(180), nullable=True, index=True)
+    path: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    occurred_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
+
+
+class CustomsDeclaration(Base):
+    __tablename__ = "customs_declarations"
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    number: Mapped[str] = mapped_column(String(40), unique=True, index=True)
+    document_type: Mapped[str] = mapped_column(String(30))
+    recipient_name: Mapped[str | None] = mapped_column(String(180), nullable=True)
+    recipient_country: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    total_value: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0)
+    payload: Mapped[dict] = mapped_column(JSONB, default=dict)
+    created_by_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    created_by: Mapped[User] = relationship()
+    printed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class BusinessCost(TimestampMixin, Base):
+    __tablename__ = "business_costs"
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(160), index=True)
+    cost_type: Mapped[BusinessCostType] = mapped_column(Enum(BusinessCostType), index=True)
+    category: Mapped[str] = mapped_column(String(80), index=True)
+    amount: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    reference_month: Mapped[date] = mapped_column(Date, index=True)
+    due_day: Mapped[int | None] = mapped_column(nullable=True)
+    recurring: Mapped[bool] = mapped_column(Boolean, default=False)
+    paid: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    created_by: Mapped[User] = relationship()
 
 
 class Purchase(TimestampMixin, Base):

@@ -1,4 +1,8 @@
 {
+  "private": true,
+  "scripts": {
+    "build:vercel": "node scripts/build-vercel.mjs"
+  },
   "devDependencies": {
     "prisma": "^7.10.0"
   }

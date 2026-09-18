@@ -9,7 +9,7 @@ from sqlalchemy import select
 from .config import get_settings
 from .database import SessionLocal
 from .models import User, UserRole
-from .routers import auth, catalog, crm, dashboard, reports, transactions
+from .routers import auth, catalog, costs, crm, customs, dashboard, metrics, reports, transactions, store_catalog
 from .security import hash_password
 
 settings = get_settings()
@@ -44,7 +44,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
     allow_credentials=False,
-    allow_methods=["GET", "POST", "PUT", "PATCH"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
     allow_headers=["Authorization", "Content-Type"],
 )
 
@@ -55,6 +55,10 @@ for api_router in (
     crm.router,
     transactions.router,
     reports.router,
+    store_catalog.router,
+    metrics.router,
+    customs.router,
+    costs.router,
 ):
     app.include_router(api_router, prefix="/api")
 

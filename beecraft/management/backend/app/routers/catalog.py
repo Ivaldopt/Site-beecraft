@@ -2,11 +2,11 @@ import uuid
 from decimal import ROUND_HALF_UP, Decimal
 
 from fastapi import APIRouter, HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from ..deps import DB, CurrentUser
-from ..models import InventoryItem, PriceHistory, Product, ProductMaterial, Supplier
+from ..models import InventoryItem, PriceHistory, Product, ProductMaterial, Purchase, PurchaseItem, SaleItem, StockMovement, Supplier
 from ..schemas import (
     InventoryItemCreate,
     InventoryItemOut,
@@ -69,6 +69,17 @@ def create_inventory(payload: InventoryItemCreate, db: DB, _: CurrentUser):
     return item
 
 
+@router.delete("/inventory/{item_id}", status_code=204)
+def delete_inventory(item_id: uuid.UUID, db: DB, _: CurrentUser):
+    item = db.get(InventoryItem, item_id)
+    if not item:
+        raise HTTPException(404, "Item de stock não encontrado")
+    used = any(db.scalar(select(func.count(model.id)).where(column == item_id)) for model, column in ((StockMovement, StockMovement.inventory_item_id), (PurchaseItem, PurchaseItem.inventory_item_id), (ProductMaterial, ProductMaterial.inventory_item_id)))
+    if used:
+        raise HTTPException(409, "Este item já possui movimentos, compras ou fichas técnicas e não pode ser eliminado.")
+    db.delete(item); db.commit()
+
+
 @router.get("/products", response_model=list[ProductOut])
 def products(db: DB, _: CurrentUser):
     return db.scalars(select(Product).order_by(Product.name)).all()
@@ -105,6 +116,26 @@ def create_product(payload: ProductCreate, db: DB, _: CurrentUser):
     db.commit()
     db.refresh(product)
     return product
+
+
+@router.delete("/products/{product_id}", status_code=204)
+def delete_product(product_id: uuid.UUID, db: DB, _: CurrentUser):
+    product = db.get(Product, product_id)
+    if not product:
+        raise HTTPException(404, "Produto não encontrado")
+    if db.scalar(select(func.count(SaleItem.id)).where(SaleItem.product_id == product_id)):
+        raise HTTPException(409, "Este produto já consta em vendas e não pode ser eliminado.")
+    db.delete(product); db.commit()
+
+
+@router.delete("/suppliers/{supplier_id}", status_code=204)
+def delete_supplier(supplier_id: uuid.UUID, db: DB, _: CurrentUser):
+    supplier = db.get(Supplier, supplier_id)
+    if not supplier:
+        raise HTTPException(404, "Fornecedor não encontrado")
+    if db.scalar(select(func.count(Purchase.id)).where(Purchase.supplier_id == supplier_id)):
+        raise HTTPException(409, "Este fornecedor possui compras e não pode ser eliminado.")
+    db.delete(supplier); db.commit()
 
 
 @router.get("/products/{product_id}/cost")

@@ -1,9 +1,9 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from decimal import ROUND_HALF_UP, Decimal
 
 from fastapi import APIRouter, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import selectinload
 
 from ..deps import DB, CurrentUser
@@ -19,7 +19,7 @@ from ..models import (
     SaleItem,
     StockMovement,
 )
-from ..schemas import PurchaseCreate, SaleCreate, StockMovementCreate
+from ..schemas import ProductionUpdate, PurchaseCreate, SaleCreate, StockMovementCreate
 from .catalog import product_cost
 
 router = APIRouter(tags=["Operações"])
@@ -103,6 +103,23 @@ def movements(
     return db.scalars(query).all()
 
 
+@router.delete("/stock/movements/{movement_id}", status_code=204)
+def delete_movement(movement_id: uuid.UUID, db: DB, _: CurrentUser):
+    movement = db.get(StockMovement, movement_id)
+    if not movement:
+        raise HTTPException(404, "Movimento não encontrado")
+    if movement.reference_type:
+        raise HTTPException(409, "Este movimento pertence a uma venda ou compra. Elimine o documento de origem.")
+    item = lock_item(db, movement.inventory_item_id)
+    if movement.movement_type == MovementType.IN:
+        if item.stock_quantity < movement.quantity:
+            raise HTTPException(409, "Não é possível anular a entrada porque o stock já foi utilizado.")
+        item.stock_quantity -= movement.quantity
+    else:
+        item.stock_quantity += movement.quantity
+    db.delete(movement); db.commit()
+
+
 @router.post("/purchases", status_code=201)
 def create_purchase(payload: PurchaseCreate, db: DB, _: CurrentUser):
     try:
@@ -152,6 +169,20 @@ def purchases(db: DB, _: CurrentUser, limit: int = Query(default=100, ge=1, le=1
     ).all()
 
 
+@router.delete("/purchases/{purchase_id}", status_code=204)
+def delete_purchase(purchase_id: uuid.UUID, db: DB, _: CurrentUser):
+    purchase = db.scalar(select(Purchase).options(selectinload(Purchase.items)).where(Purchase.id == purchase_id))
+    if not purchase:
+        raise HTTPException(404, "Compra não encontrada")
+    for line in purchase.items:
+        item = lock_item(db, line.inventory_item_id)
+        if item.stock_quantity < line.quantity:
+            raise HTTPException(409, f"Não é possível eliminar: parte do stock de {item.name} já foi utilizada.")
+        item.stock_quantity -= line.quantity
+    db.execute(delete(StockMovement).where(StockMovement.reference_type == "purchase", StockMovement.reference_id == purchase_id))
+    db.delete(purchase); db.commit()
+
+
 @router.post("/sales", status_code=201)
 def create_sale(payload: SaleCreate, db: DB, _: CurrentUser):
     try:
@@ -161,6 +192,8 @@ def create_sale(payload: SaleCreate, db: DB, _: CurrentUser):
             payment_method=payload.payment_method,
             sold_at=payload.sold_at,
             notes=payload.notes,
+            production_status="OPEN",
+            production_date=payload.sold_at.date(),
             total=0,
             total_cost=0,
             net_profit=0,
@@ -256,3 +289,42 @@ def sales(
     if product_id:
         query = query.join(SaleItem).where(SaleItem.product_id == product_id)
     return db.scalars(query).unique().all()
+
+
+@router.delete("/sales/{sale_id}", status_code=204)
+def delete_sale(sale_id: uuid.UUID, db: DB, _: CurrentUser):
+    sale = db.get(Sale, sale_id)
+    if not sale:
+        raise HTTPException(404, "Venda não encontrada")
+    movements = db.scalars(select(StockMovement).where(StockMovement.reference_type == "sale", StockMovement.reference_id == sale_id).with_for_update()).all()
+    for movement in movements:
+        item = lock_item(db, movement.inventory_item_id)
+        item.stock_quantity += movement.quantity
+    db.execute(delete(StockMovement).where(StockMovement.reference_type == "sale", StockMovement.reference_id == sale_id))
+    db.delete(sale); db.commit()
+
+
+@router.get("/production/board")
+def production_board(db: DB, _: CurrentUser, production_date: date = Query(default_factory=date.today)):
+    return db.scalars(
+        select(Sale)
+        .options(
+            selectinload(Sale.customer),
+            selectinload(Sale.items).selectinload(SaleItem.product),
+        )
+        .where(Sale.production_date == production_date)
+        .order_by(Sale.created_at.asc())
+    ).unique().all()
+
+
+@router.patch("/production/{sale_id}")
+def update_production(sale_id: uuid.UUID, payload: ProductionUpdate, db: DB, _: CurrentUser):
+    sale = db.get(Sale, sale_id)
+    if not sale:
+        raise HTTPException(404, "Encomenda não encontrada")
+    sale.production_status = payload.status
+    if payload.production_date is not None:
+        sale.production_date = payload.production_date
+    db.commit()
+    db.refresh(sale)
+    return sale
