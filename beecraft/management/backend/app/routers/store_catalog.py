@@ -56,3 +56,10 @@ async def upload_images(product_id: str, _: Owner, files: list[UploadFile] = Fil
 
 @router.delete("/images/{image_id}")
 async def delete_image(image_id: str, _: Owner): return await relay("DELETE", f"/uploads/{image_id}")
+
+@router.get("/event-orders")
+async def event_orders(_: CurrentUser): return await relay("GET", "/event-orders/admin/all")
+
+@router.patch("/event-orders/{order_id}/status")
+async def update_event_order(order_id: str, payload: dict, _: CurrentUser):
+    return await relay("PATCH", f"/event-orders/admin/{order_id}/status", json=payload)

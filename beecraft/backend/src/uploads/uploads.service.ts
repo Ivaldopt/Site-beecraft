@@ -11,12 +11,13 @@ import { Readable } from 'stream';
 export class UploadsService {
   constructor(private prisma: PrismaService) {}
 
-  private uploadBuffer(
+  uploadBuffer(
     buffer: Buffer,
+    folder = 'beecraft',
   ): Promise<{ secure_url: string; public_id: string }> {
     return new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
-        { folder: 'beecraft' },
+        { folder },
         (error, result) => {
           if (error || !result) {
             return reject(
@@ -114,7 +115,7 @@ export class UploadsService {
     return { deleted: true };
   }
 
-  private hasValidImageSignature(buffer: Buffer): boolean {
+  hasValidImageSignature(buffer: Buffer): boolean {
     const isJpeg =
       buffer.length >= 3 &&
       buffer[0] === 0xff &&

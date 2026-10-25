@@ -18,6 +18,7 @@ import MagnetBuilder from './pages/MagnetBuilder';
 import { trackCatalogEvent } from './utils/analytics';
 
 const MAINTENANCE = import.meta.env.VITE_MAINTENANCE_MODE === 'true';
+const EVENT_MODE = import.meta.env.VITE_EVENT_MODE === 'true';
 
 function ScrollReveal() {
   const { pathname } = useLocation();
@@ -75,6 +76,10 @@ function PageAnalytics() {
 export default function App() {
   if (MAINTENANCE) {
     return <EmConstrucao />;
+  }
+
+  if (EVENT_MODE) {
+    return <Routes><Route path="*" element={<MagnetBuilder eventMode />} /></Routes>;
   }
 
   return (

@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
 import Login from "./Login";
-import { Account, BusinessCosts, CatalogMetrics, CompanyUsers, Customers, CustomsDeclaration, CustomsHistory, Dashboard, PricingCalculator, Products, ProductionBoard, Purchases, Reports, Sales, Stock, StoreCatalog, StoreCategories } from "./pages";
+import { Account, BusinessCosts, CatalogMetrics, CompanyUsers, Customers, CustomsDeclaration, CustomsHistory, Dashboard, EventOrders, PricingCalculator, Products, ProductionBoard, Purchases, Reports, Sales, Stock, StoreCatalog, StoreCategories } from "./pages";
 
 const modules = {
   dashboard: { label: "Dashboard", icon: "⌂", component: Dashboard },
   sales: { label: "Vendas e pedidos", icon: "↗", component: Sales, group: "Operação" },
   production: { label: "Produção do dia", icon: "▤", component: ProductionBoard, group: "Operação" },
+  eventOrders: { label: "Pedidos do evento", icon: "▦", component: EventOrders, group: "Operação" },
   purchases: { label: "Compras", icon: "↙", component: Purchases, group: "Operação" },
   costs: { label: "Custos fixos e variáveis", icon: "€", component: BusinessCosts, group: "Operação" },
   stock: { label: "Stock", icon: "◇", component: Stock, group: "Operação" },

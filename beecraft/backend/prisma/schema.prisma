@@ -51,6 +51,21 @@ enum ReviewStatus {
   REJECTED
 }
 
+enum EventPaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  EXPIRED
+}
+
+enum EventOrderStatus {
+  WAITING
+  IN_PRODUCTION
+  READY
+  DELIVERED
+  CANCELLED
+}
+
 model Category {
   id          String  @id @default(cuid())
   name        String
@@ -313,4 +328,37 @@ model StoreReview {
   updatedAt DateTime     @updatedAt
 
   @@index([status, createdAt])
+}
+
+model EventOrder {
+  id                    String             @id @default(cuid())
+  orderNumber           String             @unique
+  customerName          String
+  contact               String
+  pickup                String
+  quantity              Int
+  amountCents           Int
+  paymentStatus         EventPaymentStatus @default(PENDING)
+  status                EventOrderStatus   @default(WAITING)
+  stripeSessionId       String?            @unique
+  stripePaymentIntentId String?            @unique
+  paidAt                DateTime?
+  artworks              EventArtwork[]
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@index([paymentStatus, createdAt])
+  @@index([status, createdAt])
+}
+
+model EventArtwork {
+  id          String     @id @default(cuid())
+  orderId     String
+  order       EventOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  url         String
+  publicId    String     @unique
+  sortOrder   Int
+  createdAt   DateTime   @default(now())
+
+  @@index([orderId, sortOrder])
 }

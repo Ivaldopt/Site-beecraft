@@ -200,7 +200,7 @@ function download(file) {
   window.setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
-function MagnetCard({ item, onChange, onRemove }) {
+function MagnetCard({ item, onChange, onRemove, fixedQuantity = false }) {
   const canvasRef = useRef(null);
   const dragRef = useRef(null);
 
@@ -235,14 +235,14 @@ function MagnetCard({ item, onChange, onRemove }) {
       <label>Tamanho da letra <output>{item.textSize} mm</output><input type="range" min="2" max="6" step=".25" value={item.textSize} onChange={(event) => onChange({ textSize: Number(event.target.value) })} /></label>
     </details>
     <div className="magnet-card-actions">
-      <label>Quantidade<input type="number" min="1" max="120" value={item.quantity} onChange={(event) => onChange({ quantity: Math.max(1, Math.min(120, Number.parseInt(event.target.value, 10) || 1)) })} /></label>
+      {!fixedQuantity && <label>Quantidade<input type="number" min="1" max="120" value={item.quantity} onChange={(event) => onChange({ quantity: Math.max(1, Math.min(120, Number.parseInt(event.target.value, 10) || 1)) })} /></label>}
       <button type="button" className="btn secondary btn-sm" onClick={() => onChange({ rotation: (item.rotation + 1) % 4, x: 0, y: 0 })}>Girar 90°</button>
     </div>
     <p className={Math.min(item.image.width, item.image.height) < 733 ? 'resolution-warning' : 'resolution-ok'}>{Math.min(item.image.width, item.image.height) < 733 ? 'Imagem pequena: confirme a nitidez antes de enviar.' : 'Resolução adequada para 50 mm.'}</p>
   </article>;
 }
 
-export default function MagnetBuilder() {
+export default function MagnetBuilder({ eventMode = false }) {
   const navigate = useNavigate();
   const { addItem } = useCart();
   const [items, setItems] = useState([]);
@@ -253,15 +253,34 @@ export default function MagnetBuilder() {
   const [working, setWorking] = useState(false);
   const [latestFile, setLatestFile] = useState(null);
   const [product, setProduct] = useState(null);
+  const [eventPackage, setEventPackage] = useState(3);
+  const [contact, setContact] = useState('');
+  const [pickup, setPickup] = useState('Retirada no evento');
   const inputRef = useRef(null);
   const total = useMemo(() => items.reduce((sum, item) => sum + item.quantity, 0), [items]);
   const pages = Math.ceil(total / 12);
+  const eventPrice = { 1: 4, 3: 7, 6: 15 }[eventPackage];
 
   useEffect(() => {
+    if (eventMode) return undefined;
     api.get('/products/iman-button-personalizado')
       .then(({ data }) => setProduct(data))
       .catch(() => setStatus('O montador funciona, mas não foi possível carregar o preço do produto.'));
-  }, []);
+  }, [eventMode]);
+
+  useEffect(() => {
+    if (!eventMode) return;
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get('session_id');
+    if (params.get('payment') === 'cancelled') setStatus('Pagamento cancelado. Pode tentar novamente.');
+    if (params.get('payment') === 'success' && sessionId) {
+      setWorking(true);
+      api.post(`/event-orders/checkout/${encodeURIComponent(sessionId)}/confirm`)
+        .then(({ data }) => setStatus(data.paid ? `Pagamento confirmado. Encomenda ${data.orderNumber} recebida!` : `Encomenda ${data.orderNumber} criada. O pagamento está a ser confirmado.`))
+        .catch(() => setStatus('Pagamento concluído. A confirmação automática está a ser atualizada.'))
+        .finally(() => setWorking(false));
+    }
+  }, [eventMode]);
 
   async function addFiles(fileList) {
     const files = Array.from(fileList ?? []);
@@ -270,7 +289,7 @@ export default function MagnetBuilder() {
     const next = [];
     let rejected = 0;
     for (const file of files) {
-      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > MAX_FILE_SIZE) { rejected += 1; continue; }
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > (eventMode ? 8 * 1024 * 1024 : MAX_FILE_SIZE)) { rejected += 1; continue; }
       try {
         const url = URL.createObjectURL(file);
         const image = new Image();
@@ -403,32 +422,71 @@ export default function MagnetBuilder() {
     }
   }
 
-  return <main className="magnet-builder-page">
-    <section className="magnet-builder-hero"><div className="container"><div className="eyebrow">Montador de ímanes BeeCraft</div><h1>As suas fotos, prontas para produzir.</h1><p>Adicione, enquadre e envie o PDF final. Tudo é processado no seu dispositivo.</p><div className="magnet-builder-steps" aria-label="Etapas"><span className={items.length ? 'done' : 'active'}><b>1</b>Adicionar</span><span className={items.length ? 'active' : ''}><b>2</b>Ajustar</span><span className={latestFile ? 'done' : ''}><b>3</b>Enviar PDF</span></div></div></section>
+  async function payEventOrder() {
+    if (items.length !== eventPackage) {
+      setStatus(`Adicione exatamente ${eventPackage} fotografia${eventPackage === 1 ? '' : 's'} para este pacote.`);
+      return;
+    }
+    if (clientName.trim().length < 2 || contact.trim().length < 5) {
+      setStatus('Preencha o nome e o telefone ou email.');
+      return;
+    }
+    setWorking(true);
+    setStatus('A preparar as artes e o pagamento seguro…');
+    try {
+      const form = new FormData();
+      form.append('customerName', clientName.trim());
+      form.append('contact', contact.trim());
+      form.append('quantity', String(eventPackage));
+      form.append('pickup', pickup);
+      for (let index = 0; index < items.length; index += 1) {
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = 1200;
+        const context = canvas.getContext('2d');
+        drawArtwork(context, items[index], 0, 0, 1200);
+        drawCaption(context, items[index], 0, 0, 1200);
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', .94));
+        if (!blob) throw new Error('Falha ao preparar a fotografia');
+        form.append('files', blob, `iman-${index + 1}.jpg`);
+      }
+      const { data } = await api.post('/event-orders', form);
+      window.location.assign(data.checkoutUrl);
+    } catch (error) {
+      const message = error.response?.data?.message;
+      setStatus(Array.isArray(message) ? message.join(' ') : message ?? 'Não foi possível iniciar o pagamento. Tente novamente.');
+      setWorking(false);
+    }
+  }
+
+  return <main className={`magnet-builder-page ${eventMode ? 'event-checkout-page' : ''}`}>
+    <section className="magnet-builder-hero"><div className="container"><div className="eyebrow">BeeCraft · Ímanes personalizados</div><h1>As suas fotos, prontas para virar memórias.</h1><p>{eventMode ? 'Escolha o pacote, ajuste as fotografias e pague com segurança no telemóvel.' : 'Adicione, enquadre e envie o PDF final. Tudo é processado no seu dispositivo.'}</p><div className="magnet-builder-steps" aria-label="Etapas"><span className={items.length ? 'done' : 'active'}><b>1</b>Adicionar</span><span className={items.length ? 'active' : ''}><b>2</b>Ajustar</span><span className={!eventMode && latestFile ? 'done' : ''}><b>3</b>{eventMode ? 'Pagar' : 'Enviar PDF'}</span></div></div></section>
     <div className="container magnet-builder-layout">
       <section className="magnet-builder-main">
+        {eventMode && <div className="event-package-picker"><span>1. Escolha o pacote</span><div>{[1, 3, 6].map((quantity) => <button type="button" className={eventPackage === quantity ? 'active' : ''} key={quantity} onClick={() => { setEventPackage(quantity); setItems((current) => current.slice(0, quantity)); }}><b>{quantity} íman{quantity === 1 ? '' : 'es'}</b><strong>{new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format({ 1: 4, 3: 7, 6: 15 }[quantity])}</strong></button>)}</div></div>}
         <div className="builder-toolbar">
-          <div><h2>1. Adicione as fotografias</h2><p>JPG, PNG ou WebP, até 50 MB por imagem.</p></div>
+          <div><h2>{eventMode ? '2.' : '1.'} Adicione as fotografias</h2><p>JPG, PNG ou WebP, até 8 MB por imagem.</p></div>
           <button type="button" className="btn honeyed" onClick={() => inputRef.current?.click()}>+ Escolher fotografias</button>
-          <input ref={inputRef} hidden type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(event) => { addFiles(event.target.files); event.target.value = ''; }} />
+          <input ref={inputRef} hidden type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(event) => { addFiles(eventMode ? Array.from(event.target.files).slice(0, Math.max(0, eventPackage - items.length)) : event.target.files); event.target.value = ''; }} />
         </div>
-        {!items.length ? <button type="button" className="magnet-dropzone" onClick={() => inputRef.current?.click()} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); addFiles(event.dataTransfer.files); }}><strong>Arraste as fotografias para aqui</strong><span>ou toque para escolher no seu dispositivo</span><small>As imagens não são enviadas para nenhum servidor.</small></button> : <><div className="builder-section-heading"><div><h2>2. Ajuste cada íman</h2><p>Arraste a imagem, escolha o enquadramento e indique a quantidade.</p></div><button type="button" onClick={() => setItems((current) => current.map((item) => ({ ...item, mode: 'fit', zoom: 1, x: 0, y: 0 })))}>Ver fotos completas</button></div><div className="magnet-builder-grid">{items.map((item) => <MagnetCard key={item.id} item={item} onChange={(changes) => updateItem(item.id, changes)} onRemove={() => setItems((current) => current.filter((entry) => entry.id !== item.id))} />)}</div></>}
+        {!items.length ? <button type="button" className="magnet-dropzone" onClick={() => inputRef.current?.click()} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); addFiles(eventMode ? Array.from(event.dataTransfer.files).slice(0, eventPackage) : event.dataTransfer.files); }}><strong>Arraste as fotografias para aqui</strong><span>ou toque para escolher no seu dispositivo</span><small>{eventMode ? `Escolha ${eventPackage} fotografia${eventPackage === 1 ? '' : 's'} para este pacote.` : 'As imagens não são enviadas para nenhum servidor.'}</small></button> : <><div className="builder-section-heading"><div><h2>{eventMode ? '3.' : '2.'} Ajuste cada íman</h2><p>Arraste a imagem e escolha o enquadramento.</p></div><button type="button" onClick={() => setItems((current) => current.map((item) => ({ ...item, mode: 'fit', zoom: 1, x: 0, y: 0 })))}>Ver fotos completas</button></div><div className="magnet-builder-grid">{items.map((item) => <MagnetCard key={item.id} item={item} fixedQuantity={eventMode} onChange={(changes) => updateItem(item.id, changes)} onRemove={() => setItems((current) => current.filter((entry) => entry.id !== item.id))} />)}</div></>}
       </section>
       <aside className="magnet-builder-summary">
-        <div className="summary-sticky"><span className="summary-label">Resumo do ficheiro</span><h2>{total || 0} ímanes</h2><dl><div><dt>Fotografias</dt><dd>{items.length}</dd></div><div><dt>Folhas A4</dt><dd>{pages || 0}</dd></div><div><dt>Por folha</dt><dd>12</dd></div><div><dt>Tamanho visível</dt><dd>50 × 50 mm</dd></div></dl>
+        <div className="summary-sticky"><span className="summary-label">Resumo da encomenda</span><h2>{eventMode ? `${eventPackage} íman${eventPackage === 1 ? '' : 'es'} · ${eventPrice.toFixed(2).replace('.', ',')} €` : `${total || 0} ímanes`}</h2><dl><div><dt>Fotografias</dt><dd>{items.length}{eventMode ? ` / ${eventPackage}` : ''}</dd></div><div><dt>Folhas A4</dt><dd>{pages || 0}</dd></div><div><dt>Por folha</dt><dd>12</dd></div><div><dt>Tamanho visível</dt><dd>50 × 50 mm</dd></div></dl>
           <label>Nome do cliente<input value={clientName} maxLength="100" onChange={(event) => setClientName(event.target.value)} placeholder="Ex.: Maria Silva" /></label>
-          <label>Referência da encomenda <span>(opcional)</span><input value={orderReference} maxLength="50" onChange={(event) => setOrderReference(event.target.value)} placeholder="Ex.: BC-1024" /></label>
-          <label className="builder-check"><input type="checkbox" checked={outline} onChange={(event) => setOutline(event.target.checked)} /> Incluir contorno de corte no PDF</label>
-          <button type="button" className="btn primary btn-block" disabled={!total || working || total > MAX_MAGNETS} onClick={addPdfToCart}>{working ? 'A preparar…' : 'Adicionar PDF ao carrinho'}</button>
+          {eventMode && <><label>Telefone ou email<input value={contact} maxLength="120" onChange={(event) => setContact(event.target.value)} placeholder="Para confirmar a encomenda" /></label><label>Entrega<select value={pickup} onChange={(event) => setPickup(event.target.value)}><option>Retirada no evento</option><option>Retirada na loja</option></select></label></>}
+          {!eventMode && <><label>Referência da encomenda <span>(opcional)</span><input value={orderReference} maxLength="50" onChange={(event) => setOrderReference(event.target.value)} placeholder="Ex.: BC-1024" /></label><label className="builder-check"><input type="checkbox" checked={outline} onChange={(event) => setOutline(event.target.checked)} /> Incluir contorno de corte no PDF</label></>}
+          {eventMode ? <button type="button" className="btn primary btn-block" disabled={items.length !== eventPackage || working} onClick={payEventOrder}>{working ? 'A preparar pagamento…' : `Pagar ${eventPrice.toFixed(2).replace('.', ',')} €`}</button> : <button type="button" className="btn primary btn-block" disabled={!total || working || total > MAX_MAGNETS} onClick={addPdfToCart}>{working ? 'A preparar…' : 'Adicionar PDF ao carrinho'}</button>}
+          {!eventMode && <>
           <button type="button" className="btn secondary btn-block" disabled={!total || working || total > MAX_MAGNETS} onClick={() => createPdf()}>Descarregar uma cópia</button>
           <button type="button" className="btn honeyed btn-block" disabled={!total || working || total > MAX_MAGNETS} onClick={sharePdf}>Enviar PDF sem comprar</button>
           <button type="button" className="builder-link" disabled={working} onClick={() => createPdf({ calibration: true })}>Descarregar folha de calibração</button>
+          </>}
           {items.length > 0 && <button type="button" className="builder-link danger" onClick={() => { if (window.confirm('Remover todas as fotografias deste projeto?')) { setItems([]); setLatestFile(null); setStatus('Projeto limpo.'); } }}>Limpar projeto</button>}
           <p className="builder-status" role="status" aria-live="polite">{status}</p>
-          <div className="builder-privacy"><b>Privacidade</b><p>As fotografias ficam apenas neste navegador. O PDF só é partilhado quando escolher enviá-lo.</p></div>
+          <div className="builder-privacy"><b>Privacidade e pagamento</b><p>{eventMode ? 'As artes são enviadas à BeeCraft ao iniciar o pagamento. O pagamento é processado pela Stripe; a BeeCraft não recebe os dados do cartão.' : 'As fotografias ficam apenas neste navegador. O PDF só é partilhado quando escolher enviá-lo.'}</p></div>
         </div>
       </aside>
     </div>
-    <section className="builder-help"><div className="container"><h2>Antes de enviar</h2><div><article><b>Verde</b><p>Área visível do íman. Mantenha rostos e texto dentro dela.</p></article><article><b>Amarelo</b><p>Linha de corte. A margem exterior garante a sangria necessária.</p></article><article><b>PDF A4</b><p>Imprima sempre a 100%, sem “ajustar à página”.</p></article></div><Link className="btn secondary" to="/imanes-acessorios">Voltar aos ímanes</Link></div></section>
+    <section className="builder-help"><div className="container"><h2>Antes de enviar</h2><div><article><b>Verde</b><p>Área visível do íman. Mantenha rostos e texto dentro dela.</p></article><article><b>Amarelo</b><p>Linha de corte. A margem exterior garante a sangria necessária.</p></article><article><b>{eventMode ? 'Pagamento seguro' : 'PDF A4'}</b><p>{eventMode ? 'Processado pela Stripe. A BeeCraft não recebe os dados do cartão.' : 'Imprima sempre a 100%, sem “ajustar à página”.'}</p></article></div>{!eventMode && <Link className="btn secondary" to="/imanes-acessorios">Voltar aos ímanes</Link>}</div></section>
   </main>;
 }

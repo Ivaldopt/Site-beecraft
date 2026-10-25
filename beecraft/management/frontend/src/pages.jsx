@@ -641,6 +641,21 @@ const emptyStoreProduct = {
   categoryId: "", status: "DRAFT", saleType: "CUSTOMIZABLE", variants: [], options: [], images: [],
 };
 
+export function EventOrders() {
+  const { data: orders, error, loading, load } = useData("/store-catalog/event-orders");
+  const paid = orders.filter((order) => order.paymentStatus === "PAID");
+  const update = async (order, status) => {
+    await api(`/store-catalog/event-orders/${order.id}/status`, { method: "PATCH", body: JSON.stringify({ status }) });
+    load();
+  };
+  return <>
+    <PageHeader title="Pedidos do evento" subtitle="Pagamentos e artes recebidos pelo QR Code" actions={<button onClick={load}>Atualizar</button>} />
+    <div className="stats"><Stat label="Pedidos" value={orders.length} /><Stat label="Pagos" value={paid.length} /><Stat label="Ímanes pagos" value={paid.reduce((sum, order) => sum + order.quantity, 0)} /><Stat label="Faturação" value={money(paid.reduce((sum, order) => sum + order.amountCents / 100, 0))} /></div>
+    {error && <ErrorMessage>{error}</ErrorMessage>}
+    {loading ? <Empty>A carregar pedidos…</Empty> : !orders.length ? <Empty>Ainda não existem pedidos do evento.</Empty> : <div className="panel"><table><thead><tr><th>Pedido</th><th>Cliente</th><th>Pacote</th><th>Pagamento</th><th>Produção</th><th>Artes</th><th>Ações</th></tr></thead><tbody>{orders.map((order) => <tr key={order.id}><td><b>{order.orderNumber}</b><small>{date(order.createdAt)}</small></td><td>{order.customerName}<small>{order.contact}<br />{order.pickup}</small></td><td>{order.quantity} · {money(order.amountCents / 100)}</td><td>{order.paymentStatus}</td><td>{order.status}</td><td><div className="event-artworks">{order.artworks.map((art) => <a key={art.id} href={art.url} target="_blank" rel="noreferrer"><img src={art.url} alt="Arte do íman" /></a>)}</div></td><td><select value={order.status} disabled={order.paymentStatus !== "PAID"} onChange={(event) => update(order, event.target.value)}><option value="WAITING">Aguardando</option><option value="IN_PRODUCTION">Em produção</option><option value="READY">Pronto</option><option value="DELIVERED">Entregue</option><option value="CANCELLED">Cancelado</option></select></td></tr>)}</tbody></table></div>}
+  </>;
+}
+
 export function StoreCatalog() {
   const { data: products, error, loading, load } = useData("/store-catalog/products");
   const { data: categories } = useData("/store-catalog/categories");

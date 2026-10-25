@@ -58,9 +58,20 @@ Variáveis de build:
 STORE_API_URL=https://DOMINIO-DA-API-LOJA
 MANAGEMENT_API_URL=https://DOMINIO-DA-API-GESTAO/api
 VITE_MAINTENANCE_MODE=false
+VITE_EVENT_MODE=true
 VITE_WHATSAPP_NUMBER=351915099277
 VITE_PRODUCTION_ESTIMATE=5 a 7 dias úteis
 ```
+
+No serviço Railway da API da loja, configure também:
+
+```text
+PUBLIC_STORE_URL=https://www.beecraft.pt
+STRIPE_SECRET_KEY=<chave secreta da conta Stripe>
+STRIPE_WEBHOOK_SECRET=<segredo do webhook Stripe>
+```
+
+Crie na Stripe um webhook para `https://DOMINIO-DA-API-LOJA/event-orders/stripe/webhook` com os eventos `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` e `checkout.session.expired`.
 
 O build gera uma única publicação: a loja fica na raiz e o painel em `/adm/`.
 

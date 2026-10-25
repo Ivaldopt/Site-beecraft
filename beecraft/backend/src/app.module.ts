@@ -10,6 +10,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { OrdersModule } from './orders/orders.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { EventOrdersModule } from './event-orders/event-orders.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { ReviewsModule } from './reviews/reviews.module';
     UploadsModule,
     OrdersModule,
     ReviewsModule,
+    EventOrdersModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
