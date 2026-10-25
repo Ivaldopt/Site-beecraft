@@ -86,7 +86,7 @@ export class CreateOrderItemDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
+  @Max(240)
   quantity: number;
 
   @IsOptional()

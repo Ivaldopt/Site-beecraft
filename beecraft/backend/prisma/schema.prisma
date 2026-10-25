@@ -45,6 +45,12 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model Category {
   id          String  @id @default(cuid())
   name        String
@@ -294,4 +300,17 @@ model ProductionOrder {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model StoreReview {
+  id        String       @id @default(cuid())
+  name      String
+  city      String?
+  rating    Int
+  comment   String
+  status    ReviewStatus @default(PENDING)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([status, createdAt])
 }

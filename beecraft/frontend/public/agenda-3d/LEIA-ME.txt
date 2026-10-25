@@ -1,0 +1,52 @@
+BEECRAFT — AGENDA 3D | CÓDIGO COMPLETO
+
+Versão: 20/10/2026 — inclui a correção do verso e o folhear das páginas.
+
+COMO EXECUTAR
+1. Extraia o ZIP para uma pasta.
+2. Abra um terminal nessa pasta.
+3. Com Python instalado, execute:
+   Windows: py -m http.server 8080
+   macOS/Linux: python3 -m http.server 8080
+4. Abra http://localhost:8080 no navegador.
+5. Para encerrar, pressione Ctrl+C no terminal.
+
+Alternativa: abra a pasta no Visual Studio Code e use a extensão Live Server.
+Não abra index.html apenas com duplo clique: os módulos JavaScript precisam
+ser servidos por HTTP.
+
+PARA COLOCAR NO SEU SITE
+Envie index.html, os ficheiros .js e .css, as imagens e a pasta vendor para
+a mesma pasta da sua hospedagem estática. Preserve os nomes e subpastas.
+Este pacote não contém dados de acesso nem identificadores da hospedagem.
+
+CONTEÚDO
+index.html              — interface
+style.css               — estilos e apresentação no telemóvel
+app.js                  — editor, personalização e agenda em 3D
+PageDeck.js             — sequência das páginas e folhas adicionadas
+SoftwareRenderer.js     — alternativa quando WebGL não está disponível
+panorama.js             — cenário panorâmico no modo de compatibilidade
+atelier-360.jpg          — cenário panorâmico
+studio.jpg              — imagem de cenário original
+vendor/                 — Three.js 0.170.0 e módulos locais
+vendor/LICENSE.txt      — licença MIT da biblioteca Three.js
+
+UTILIZAÇÃO
+Capa: personalize frente e verso com imagens, textos e elementos.
+Agenda: selecione o formato, encadernação, textura e quantidade de folhas.
+Miolo: escolha as páginas principais e as secções adicionais.
+Para folhear: toque nas páginas, arraste-as ou use as setas.
+Adicionar folha: selecione o miolo da nova folha; cada folha tem duas páginas.
+Rodar cenário: move a câmara à volta da agenda.
+
+REQUISITOS E LIMITES
+Navegador moderno com JavaScript. WebGL proporciona a iluminação e texturas
+completas; existe um modo de compatibilidade sem aceleração gráfica.
+As dependências estão incluídas; não é necessária uma chave de API.
+As personalizações ficam na memória da página. Atualizar ou fechar pode
+perdê-las. O botão Configuração exporta as opções, não guarda as imagens.
+A exportação PNG é uma prévia da arte; este código ainda não gera o PDF
+final de produção, sangria, imposição, pagamentos nem envio de encomendas.
+
+Fonte publicada: commit aa1c5863065954abf35800e1f22bd1f6ef60efda.

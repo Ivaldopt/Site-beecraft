@@ -14,6 +14,7 @@ import Services from './pages/Services';
 import ServiceDetail from './pages/ServiceDetail';
 import Works from './pages/Works';
 import WorkCategory from './pages/WorkCategory';
+import MagnetBuilder from './pages/MagnetBuilder';
 import { trackCatalogEvent } from './utils/analytics';
 
 const MAINTENANCE = import.meta.env.VITE_MAINTENANCE_MODE === 'true';
@@ -94,6 +95,7 @@ export default function App() {
         <Route path="/cadernos" element={<Shop categoryOverride="cadernos" title="Cadernos" />} />
         <Route path="/cadernos/:tipo" element={<Shop categoryOverride="cadernos" title="Cadernos" />} />
         <Route path="/imanes-acessorios" element={<Shop categoryOverride="blocos" title="Ímanes e acessórios" hero="magnets" />} />
+        <Route path="/montador-imas" element={<MagnetBuilder />} />
         <Route path="/brindes" element={<Shop title="Brindes personalizados" />} />
         <Route path="/presentes" element={<Shop title="Brindes personalizados" />} />
         <Route path="/produto/:slug" element={<ProductDetail />} />

@@ -25,6 +25,10 @@ export default function Home() {
   const [subscribed, setSubscribed] = useState(false);
   const [company, setCompany] = useState({ name: '', contact: '', email: '', quantity: '', details: '' });
   const [heroSlide, setHeroSlide] = useState(0);
+  const [reviews, setReviews] = useState([]);
+  const [review, setReview] = useState({ name: '', city: '', rating: 5, comment: '' });
+  const [reviewStatus, setReviewStatus] = useState('');
+  const [sendingReview, setSendingReview] = useState(false);
 
   useEffect(() => {
     Promise.all([api.get('/categories'), api.get('/products')])
@@ -36,7 +40,30 @@ export default function Home() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    api.get('/reviews').then(({ data }) => setReviews(data)).catch(() => {});
+  }, []);
+
+  async function submitReview(event) {
+    event.preventDefault();
+    setSendingReview(true);
+    setReviewStatus('');
+    try {
+      await api.post('/reviews', review);
+      setReview({ name: '', city: '', rating: 5, comment: '' });
+      setReviewStatus('Obrigada! A sua avaliação foi recebida e aparecerá aqui depois de analisada.');
+    } catch (requestError) {
+      const message = requestError.response?.data?.message;
+      setReviewStatus(Array.isArray(message) ? message.join(' ') : message ?? 'Não foi possível enviar a avaliação. Tente novamente.');
+    } finally {
+      setSendingReview(false);
+    }
+  }
+
   const featured = products[0];
+  const reviewAverage = reviews.length
+    ? (reviews.reduce((sum, item) => sum + item.rating, 0) / reviews.length).toFixed(1).replace('.', ',')
+    : '—';
   const heroSlides = [
     { eyebrow: 'Agenda + planner combinada', title: 'O seu ano, organizado à sua maneira.', text: 'Uma peça artesanal com capa, interior, nome e fotografia escolhidos por si.', primary: 'Criar a minha', primaryTo: featured ? `/personalizar/${featured.slug}` : '/agendas-planners', secondary: 'Ver agendas', secondaryTo: '/agendas-planners', theme: 'agenda' },
     { eyebrow: 'A sua história na capa', title: 'Transforme uma fotografia numa peça única.', text: 'Envie a imagem, escolha os detalhes e acompanhe a personalização no preview em tempo real.', primary: 'Personalizar agora', primaryTo: featured ? `/personalizar/${featured.slug}` : '/loja', secondary: 'Como funciona', secondaryTo: '/faq', theme: 'photo' },
@@ -140,6 +167,30 @@ export default function Home() {
           <button className="btn primary btn-block" type="submit">Pedir orçamento pelo WhatsApp</button>
           <p className="b2b-privacy">Usaremos estes dados apenas para responder ao seu pedido.</p>
         </form>
+      </div></section>
+
+      <section className="home-reviews" id="avaliacoes"><div className="container">
+        <div className="section-head review-heading"><div><div className="eyebrow">Experiências BeeCraft</div><h2>Quem compra, conta.</h2><p>Avaliações de quem transformou uma ideia numa peça especial.</p></div><div className="review-score"><strong>{reviewAverage}</strong><span aria-label="Classificação média">★★★★★</span><small>{reviews.length} avaliação{reviews.length === 1 ? '' : 'ões'} publicada{reviews.length === 1 ? '' : 's'}</small></div></div>
+        <div className="reviews-layout">
+          <div className="review-cards">
+            {!reviews.length && <div className="reviews-empty"><span>★</span><h3>Seja a primeira pessoa a avaliar</h3><p>Depois de aprovada, a sua experiência aparecerá aqui para ajudar outros clientes.</p></div>}
+            {reviews.slice(0, 6).map((item) => <article className="review-card" key={item.id}>
+              <div className="review-card-top"><span className="review-avatar" aria-hidden="true">{item.name.slice(0, 1).toUpperCase()}</span><div><strong>{item.name}</strong><small>{item.city || 'Cliente BeeCraft'}</small></div><i title="Avaliação aprovada">✓</i></div>
+              <div className="review-stars" aria-label={`${item.rating} de 5 estrelas`}>{'★'.repeat(item.rating)}<span>{'★'.repeat(5 - item.rating)}</span></div>
+              <p>“{item.comment}”</p>
+            </article>)}
+          </div>
+          <form className="review-form" onSubmit={submitReview}>
+            <div><div className="eyebrow">A sua opinião importa</div><h3>Como foi a sua experiência?</h3><p>Conte-nos como correu a sua compra na BeeCraft.</p></div>
+            <fieldset><legend>A sua classificação *</legend><div className="rating-picker">{[1, 2, 3, 4, 5].map((star) => <button type="button" key={star} className={star <= review.rating ? 'selected' : ''} onClick={() => setReview({ ...review, rating: star })} aria-label={`${star} estrela${star > 1 ? 's' : ''}`}>★</button>)}</div></fieldset>
+            <div className="field"><label htmlFor="review-name">Nome *</label><input id="review-name" required minLength="2" maxLength="60" value={review.name} onChange={(event) => setReview({ ...review, name: event.target.value })} /></div>
+            <div className="field"><label htmlFor="review-city">Localidade</label><input id="review-city" maxLength="60" value={review.city} onChange={(event) => setReview({ ...review, city: event.target.value })} /></div>
+            <div className="field"><label htmlFor="review-comment">A sua experiência *</label><textarea id="review-comment" required minLength="10" maxLength="600" rows="5" value={review.comment} onChange={(event) => setReview({ ...review, comment: event.target.value })} placeholder="O que mais gostou no produto ou no atendimento?" /></div>
+            <button className="btn primary btn-block" type="submit" disabled={sendingReview}>{sendingReview ? 'A enviar…' : 'Publicar avaliação'}</button>
+            {reviewStatus && <p className="review-form-status" role="status">{reviewStatus}</p>}
+            <small className="review-moderation">As avaliações são analisadas antes da publicação. Não inclua dados pessoais.</small>
+          </form>
+        </div>
       </div></section>
 
       <section className="home-faq" id="perguntas-frequentes"><div className="container home-faq-grid">

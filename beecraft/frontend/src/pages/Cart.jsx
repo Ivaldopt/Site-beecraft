@@ -4,6 +4,7 @@ import { useCart } from '../context/CartContext';
 import { createWhatsappUrl } from '../components/WhatsappFab';
 import api from '../api/client';
 import { trackCatalogEvent } from '../utils/analytics';
+import { deleteCartAttachment, getCartAttachment } from '../utils/cartAttachments';
 
 const money = (value) =>
   new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value);
@@ -14,6 +15,7 @@ export default function Cart() {
   const [submitting, setSubmitting] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
   const [fallbackWhatsappUrl, setFallbackWhatsappUrl] = useState('');
+  const [checkoutNotice, setCheckoutNotice] = useState('');
 
   function updateCustomer(event) {
     setCustomer((current) => ({ ...current, [event.target.name]: event.target.value }));
@@ -45,7 +47,10 @@ export default function Cart() {
     event.preventDefault();
     setSubmitting(true);
     setCheckoutError('');
+    setCheckoutNotice('');
     setFallbackWhatsappUrl('');
+    const attachmentItems = items.filter((item) => item.attachmentId);
+    // Open synchronously from the submit gesture so popup blockers do not stop WhatsApp.
     const whatsappWindow = window.open('about:blank', '_blank');
     if (whatsappWindow) whatsappWindow.opener = null;
 
@@ -69,12 +74,50 @@ export default function Cart() {
       });
       const whatsappUrl = createWhatsappUrl(createVerifiedMessage(order));
       trackCatalogEvent('WHATSAPP_CLICK');
-      clearCart();
-      if (whatsappWindow) {
+      const files = (await Promise.all(attachmentItems.map((item) => getCartAttachment(item.attachmentId).catch(() => null)))).filter(Boolean);
+      if (files.length && navigator.share && navigator.canShare?.({ files })) {
+        try {
+          await navigator.share({
+            title: `Encomenda ${order.orderNumber} · BeeCraft`,
+            text: `${createVerifiedMessage(order)}\n\nPDF(s) da personalização anexado(s).`,
+            files,
+          });
+          whatsappWindow?.close();
+          await Promise.all(attachmentItems.map((item) => deleteCartAttachment(item.attachmentId)));
+          clearCart();
+          setCheckoutNotice('Pedido e PDF partilhados. Escolha o WhatsApp na janela de partilha para concluir.');
+          return;
+        } catch (shareError) {
+          if (shareError?.name === 'AbortError') {
+            whatsappWindow?.close();
+            setCheckoutNotice('A partilha foi cancelada. O pedido continua no carrinho para tentar novamente.');
+            return;
+          }
+        }
+      }
+      if (files.length) {
+        files.forEach((file) => {
+          const url = URL.createObjectURL(file);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = file.name;
+          link.click();
+          window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        });
+        setCheckoutNotice('O PDF foi descarregado. Anexe-o na conversa do WhatsApp que será aberta.');
+        if (whatsappWindow) whatsappWindow.location.href = whatsappUrl;
+        else setFallbackWhatsappUrl(whatsappUrl);
+      } else if (attachmentItems.length) {
+        setCheckoutNotice('Não encontrámos o PDF guardado. Gere-o novamente ou envie-o manualmente no WhatsApp.');
+        if (whatsappWindow) whatsappWindow.location.href = whatsappUrl;
+        else setFallbackWhatsappUrl(whatsappUrl);
+      } else if (whatsappWindow) {
         whatsappWindow.location.href = whatsappUrl;
       } else {
         setFallbackWhatsappUrl(whatsappUrl);
       }
+      await Promise.all(attachmentItems.map((item) => deleteCartAttachment(item.attachmentId)));
+      clearCart();
     } catch (requestError) {
       whatsappWindow?.close();
       const message = requestError.response?.data?.message;
@@ -88,18 +131,23 @@ export default function Cart() {
     }
   }
 
+  async function handleRemove(item) {
+    if (item.attachmentId) await deleteCartAttachment(item.attachmentId).catch(() => {});
+    removeItem(item.cartItemId);
+  }
+
   return (
     <main className="container cart-page">
       <div className="breadcrumb"><Link to="/">Início</Link> / Carrinho</div>
       <div className="section-head"><h2>O seu carrinho</h2></div>
       {!items.length ? (
         <div className="cart-empty-page">
-          {fallbackWhatsappUrl ? (
+          {fallbackWhatsappUrl || checkoutNotice ? (
             <>
-              <p>Pedido criado e validado com sucesso.</p>
-              <a className="btn whatsapp-btn" href={fallbackWhatsappUrl} target="_blank" rel="noreferrer">
+              <p>{checkoutNotice || 'Pedido criado e validado com sucesso.'}</p>
+              {fallbackWhatsappUrl && <a className="btn whatsapp-btn" href={fallbackWhatsappUrl} target="_blank" rel="noreferrer">
                 Abrir WhatsApp
-              </a>
+              </a>}
             </>
           ) : (
             <>
@@ -122,7 +170,7 @@ export default function Cart() {
                   {(item.optionsSummary ?? []).map((option) => <p key={option}>{option}</p>)}
                   {item.customizationFileName && (
                     <p className="cart-file-note">
-                      Ficheiro: {item.customizationFileName} (enviar no WhatsApp)
+                      PDF pronto: {item.customizationFileName}
                     </p>
                   )}
                   {item.customizationText && <p>Texto: {item.customizationText}</p>}
@@ -131,7 +179,7 @@ export default function Cart() {
                   <button
                     className="cart-delete-btn"
                     type="button"
-                    onClick={() => removeItem(item.cartItemId)}
+                    onClick={() => handleRemove(item)}
                     aria-label={`Excluir ${item.productName} do carrinho`}
                   >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -167,8 +215,9 @@ export default function Cart() {
                 <input id="checkout-phone" name="phone" type="tel" value={customer.phone} onChange={updateCustomer} pattern="\+?[0-9 ]{9,20}" autoComplete="tel" placeholder="+351 912 345 678" />
               </div>
               {checkoutError && <p className="form-error" role="alert">{checkoutError}</p>}
+              {checkoutNotice && <p className="checkout-notice" role="status">{checkoutNotice}</p>}
               <button className="btn whatsapp-btn btn-block" type="submit" disabled={submitting}>
-                {submitting ? 'A validar pedido...' : 'Finalizar pelo WhatsApp'}
+                {submitting ? 'A preparar pedido e PDF...' : items.some((item) => item.attachmentId) ? 'Enviar pedido e PDF pelo WhatsApp' : 'Finalizar pelo WhatsApp'}
               </button>
               {fallbackWhatsappUrl && (
                 <a className="checkout-fallback" href={fallbackWhatsappUrl} target="_blank" rel="noreferrer">

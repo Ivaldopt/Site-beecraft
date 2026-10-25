@@ -8,6 +8,7 @@ import MagnetPreviewCanvas from '../components/MagnetPreviewCanvas';
 import KitPreview from '../components/KitPreview';
 import { findWorkCategory } from '../data/worksCatalog';
 import { trackCatalogEvent } from '../utils/analytics';
+import AgendaStudio from './AgendaStudio';
 
 const money = (value) =>
   new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value);
@@ -71,6 +72,7 @@ export default function ProductDetail() {
   const customizable = product?.saleType !== 'READY_MADE';
   const isNotebook = product?.slug === 'caderno-personalizado';
   const isMagnet = product?.slug === 'iman-button-personalizado';
+  const isAgenda = product?.category?.slug === 'agendas' && product?.saleType !== 'READY_MADE';
   const workCategoryEntry = findWorkCategory(product?.slug);
   const isBusinessProduct = Boolean(workCategoryEntry) || product?.slug?.startsWith('kit-') || ['servico-design-grafico', 'criacao-de-site'].includes(product?.slug);
   const extrasOption = product?.options.find((option) => option.slug === 'extras');
@@ -170,6 +172,10 @@ export default function ProductDetail() {
     navigate('/carrinho');
   }
 
+  if (product && isAgenda) {
+    return <AgendaStudio productOverride={product} />;
+  }
+
   if (error && !product) return <main className="container page-state">{error}</main>;
   if (!product) return <main className="container page-state">A carregar produto...</main>;
 
@@ -236,8 +242,9 @@ export default function ProductDetail() {
                 <button type="button" className={selectedCustomization?.value === 'foto' ? 'selected' : ''} onClick={() => chooseCoverMode('foto')}><b>▣</b><span>Fotografia</span></button>
                 <button type="button" className={['logo', 'logotipo'].includes(selectedCustomization?.value) ? 'selected' : ''} onClick={() => chooseCoverMode('logo')}><b>◇</b><span>Logótipo</span></button>
               </fieldset>
+              <div className="magnet-builder-invite"><div><strong>Tem várias fotografias?</strong><span>Monte até 240 ímanes e envie-nos um único PDF pronto.</span></div><Link className="btn honeyed btn-sm" to="/montador-imas">Abrir montador</Link></div>
             </section> : <section className="cover-configurator" aria-labelledby="cover-configurator-title">
-              <div className="configurator-heading"><span>Personalize</span><h2 id="cover-configurator-title">A capa e o interior</h2><p>Escolha as opções para adaptar a agenda ao seu dia a dia.</p></div>
+              <div className="configurator-heading"><span>Personalize</span><h2 id="cover-configurator-title">A capa e o interior</h2><p>Escolha as opções para adaptar a agenda ao seu dia a dia.</p>{isAgenda && <Link className="agenda-3d-launch" to={`/personalizar/${product.slug}`}><b>3D</b><span><strong>Personalizar no atelier 3D</strong><small>Crie capa, verso e miolo e folheie a agenda</small></span><i>→</i></Link>}</div>
               <fieldset className="compact-choice"><legend>Orientação</legend>{['Horizontal', 'Vertical'].map((value) => <label key={value}><input type="radio" name="orientation" checked={customDetails.orientation === value} onChange={() => setCustomDetails({ ...customDetails, orientation: value })} /> {value}</label>)}</fieldset>
               <fieldset className="cover-mode-choice"><legend>Design da capa</legend>
                 <button type="button" className={selectedCustomization?.value === 'nome' ? 'selected' : ''} onClick={() => chooseCoverMode('nome')}><b>Aa</b><span>Nome ou frase</span></button>

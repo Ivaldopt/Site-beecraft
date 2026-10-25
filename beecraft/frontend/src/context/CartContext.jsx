@@ -33,7 +33,8 @@ export function CartProvider({ children }) {
           current.customizationText === item.customizationText &&
           current.customizationTextColor === item.customizationTextColor &&
           JSON.stringify(current.customizationDetails ?? {}) === JSON.stringify(item.customizationDetails ?? {}) &&
-          current.customizationFileName === item.customizationFileName,
+          current.customizationFileName === item.customizationFileName &&
+          current.attachmentId === item.attachmentId,
       );
 
       if (match) {

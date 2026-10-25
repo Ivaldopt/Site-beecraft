@@ -9,6 +9,7 @@ import { PricingModule } from './pricing/pricing.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { OrdersModule } from './orders/orders.module';
+import { ReviewsModule } from './reviews/reviews.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { OrdersModule } from './orders/orders.module';
     PricingModule,
     UploadsModule,
     OrdersModule,
+    ReviewsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

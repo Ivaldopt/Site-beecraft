@@ -53,7 +53,7 @@ export default function Shop({ categoryOverride = '', title = 'Loja BeeCraft', h
 
   return (
     <main className="shop-page">
-      {hero === 'magnets' && <section className="magnets-shop-hero"><img src={magnetsHero} alt="Íman personalizado BeeCraft em azul pastel" /><div className="container magnets-shop-hero-content"><div className="eyebrow">Ímanes personalizados</div><h1>Pequenos detalhes.<br />Grandes memórias.</h1><p>Transforme fotografias, mensagens e marcas em peças únicas.</p><Link className="btn primary" to="/personalizar/iman-button-personalizado">Personalizar agora</Link></div></section>}
+      {hero === 'magnets' && <section className="magnets-shop-hero"><img src={magnetsHero} alt="Íman personalizado BeeCraft em azul pastel" /><div className="container magnets-shop-hero-content"><div className="eyebrow">Ímanes personalizados</div><h1>Pequenos detalhes.<br />Grandes memórias.</h1><p>Transforme fotografias, mensagens e marcas em peças únicas.</p><div className="magnet-hero-actions"><Link className="btn primary" to="/montador-imas">Montar os meus ímanes</Link><Link className="btn secondary" to="/personalizar/iman-button-personalizado">Personalização simples</Link></div></div></section>}
       <div className="container">
         <div className="breadcrumb"><Link to="/">Início</Link> / Loja</div>
         <div className="shop-heading">
