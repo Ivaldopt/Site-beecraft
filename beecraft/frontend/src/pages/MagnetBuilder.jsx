@@ -450,7 +450,22 @@ export default function MagnetBuilder({ eventMode = false }) {
         form.append('files', blob, `iman-${index + 1}.jpg`);
       }
       const { data } = await api.post('/event-orders', form);
-      window.location.assign(data.checkoutUrl);
+      const mensagem = [
+        'Olá, BeeCraft! Quero finalizar meu pedido de ímãs.',
+        '',
+        `Pedido: ${data.orderNumber}`,
+        `Cliente: ${clientName.trim()}`,
+        `Quantidade: ${eventPackage} ímãs`,
+        `Total: ${(data.amountCents / 100).toFixed(2).replace('.', ',')} €`,
+        `Entrega: ${pickup}`,
+        'Pagamento: MB WAY',
+        '',
+        'Aguardo as instruções para pagamento.'
+      ].join('\n');
+
+      window.location.assign(
+        `https://wa.me/351915099277?text=${encodeURIComponent(mensagem)}`
+      );
     } catch (error) {
       const message = error.response?.data?.message;
       setStatus(Array.isArray(message) ? message.join(' ') : message ?? 'Não foi possível iniciar o pagamento. Tente novamente.');
@@ -459,7 +474,6 @@ export default function MagnetBuilder({ eventMode = false }) {
   }
 
   return <main className={`magnet-builder-page ${eventMode ? 'event-checkout-page' : ''}`}>
-    <section className="magnet-builder-hero"><div className="container"><div className="eyebrow">BeeCraft · Ímanes personalizados</div><h1>As suas fotos, prontas para virar memórias.</h1><p>{eventMode ? 'Escolha o pacote, ajuste as fotografias e pague com segurança no telemóvel.' : 'Adicione, enquadre e envie o PDF final. Tudo é processado no seu dispositivo.'}</p><div className="magnet-builder-steps" aria-label="Etapas"><span className={items.length ? 'done' : 'active'}><b>1</b>Adicionar</span><span className={items.length ? 'active' : ''}><b>2</b>Ajustar</span><span className={!eventMode && latestFile ? 'done' : ''}><b>3</b>{eventMode ? 'Pagar' : 'Enviar PDF'}</span></div></div></section>
     <div className="container magnet-builder-layout">
       <section className="magnet-builder-main">
         {eventMode && <div className="event-package-picker"><span>1. Escolha o pacote</span><div>{[1, 3, 6].map((quantity) => <button type="button" className={eventPackage === quantity ? 'active' : ''} key={quantity} onClick={() => { setEventPackage(quantity); setItems((current) => current.slice(0, quantity)); }}><b>{quantity} íman{quantity === 1 ? '' : 'es'}</b><strong>{new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format({ 1: 4, 3: 7, 6: 15 }[quantity])}</strong></button>)}</div></div>}
@@ -471,22 +485,207 @@ export default function MagnetBuilder({ eventMode = false }) {
         {!items.length ? <button type="button" className="magnet-dropzone" onClick={() => inputRef.current?.click()} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); addFiles(eventMode ? Array.from(event.dataTransfer.files).slice(0, eventPackage) : event.dataTransfer.files); }}><strong>Arraste as fotografias para aqui</strong><span>ou toque para escolher no seu dispositivo</span><small>{eventMode ? `Escolha ${eventPackage} fotografia${eventPackage === 1 ? '' : 's'} para este pacote.` : 'As imagens não são enviadas para nenhum servidor.'}</small></button> : <><div className="builder-section-heading"><div><h2>{eventMode ? '3.' : '2.'} Ajuste cada íman</h2><p>Arraste a imagem e escolha o enquadramento.</p></div><button type="button" onClick={() => setItems((current) => current.map((item) => ({ ...item, mode: 'fit', zoom: 1, x: 0, y: 0 })))}>Ver fotos completas</button></div><div className="magnet-builder-grid">{items.map((item) => <MagnetCard key={item.id} item={item} fixedQuantity={eventMode} onChange={(changes) => updateItem(item.id, changes)} onRemove={() => setItems((current) => current.filter((entry) => entry.id !== item.id))} />)}</div></>}
       </section>
       <aside className="magnet-builder-summary">
-        <div className="summary-sticky"><span className="summary-label">Resumo da encomenda</span><h2>{eventMode ? `${eventPackage} íman${eventPackage === 1 ? '' : 'es'} · ${eventPrice.toFixed(2).replace('.', ',')} €` : `${total || 0} ímanes`}</h2><dl><div><dt>Fotografias</dt><dd>{items.length}{eventMode ? ` / ${eventPackage}` : ''}</dd></div><div><dt>Folhas A4</dt><dd>{pages || 0}</dd></div><div><dt>Por folha</dt><dd>12</dd></div><div><dt>Tamanho visível</dt><dd>50 × 50 mm</dd></div></dl>
-          <label>Nome do cliente<input value={clientName} maxLength="100" onChange={(event) => setClientName(event.target.value)} placeholder="Ex.: Maria Silva" /></label>
-          {eventMode && <><label>Telefone ou email<input value={contact} maxLength="120" onChange={(event) => setContact(event.target.value)} placeholder="Para confirmar a encomenda" /></label><label>Entrega<select value={pickup} onChange={(event) => setPickup(event.target.value)}><option>Retirada no evento</option><option>Retirada na loja</option></select></label></>}
-          {!eventMode && <><label>Referência da encomenda <span>(opcional)</span><input value={orderReference} maxLength="50" onChange={(event) => setOrderReference(event.target.value)} placeholder="Ex.: BC-1024" /></label><label className="builder-check"><input type="checkbox" checked={outline} onChange={(event) => setOutline(event.target.checked)} /> Incluir contorno de corte no PDF</label></>}
-          {eventMode ? <button type="button" className="btn primary btn-block" disabled={items.length !== eventPackage || working} onClick={payEventOrder}>{working ? 'A preparar pagamento…' : `Pagar ${eventPrice.toFixed(2).replace('.', ',')} €`}</button> : <button type="button" className="btn primary btn-block" disabled={!total || working || total > MAX_MAGNETS} onClick={addPdfToCart}>{working ? 'A preparar…' : 'Adicionar PDF ao carrinho'}</button>}
-          {!eventMode && <>
-          <button type="button" className="btn secondary btn-block" disabled={!total || working || total > MAX_MAGNETS} onClick={() => createPdf()}>Descarregar uma cópia</button>
-          <button type="button" className="btn honeyed btn-block" disabled={!total || working || total > MAX_MAGNETS} onClick={sharePdf}>Enviar PDF sem comprar</button>
-          <button type="button" className="builder-link" disabled={working} onClick={() => createPdf({ calibration: true })}>Descarregar folha de calibração</button>
-          </>}
-          {items.length > 0 && <button type="button" className="builder-link danger" onClick={() => { if (window.confirm('Remover todas as fotografias deste projeto?')) { setItems([]); setLatestFile(null); setStatus('Projeto limpo.'); } }}>Limpar projeto</button>}
-          <p className="builder-status" role="status" aria-live="polite">{status}</p>
-          <div className="builder-privacy"><b>Privacidade e pagamento</b><p>{eventMode ? 'As artes são enviadas à BeeCraft ao iniciar o pagamento. O pagamento é processado pela Stripe; a BeeCraft não recebe os dados do cartão.' : 'As fotografias ficam apenas neste navegador. O PDF só é partilhado quando escolher enviá-lo.'}</p></div>
-        </div>
-      </aside>
+     
+<div className="summary-sticky">
+  <span className="summary-label">Resumo da encomenda</span>
+
+  <h2>
+    {eventMode
+      ? `${eventPackage} íman${eventPackage === 1 ? '' : 'es'} · ${eventPrice.toFixed(2).replace('.', ',')} €`
+      : `${total || 0} ímanes`}
+  </h2>
+
+  <dl>
+    <div>
+      <dt>Fotografias</dt>
+      <dd>{items.length}{eventMode ? ` / ${eventPackage}` : ''}</dd>
     </div>
-    <section className="builder-help"><div className="container"><h2>Antes de enviar</h2><div><article><b>Verde</b><p>Área visível do íman. Mantenha rostos e texto dentro dela.</p></article><article><b>Amarelo</b><p>Linha de corte. A margem exterior garante a sangria necessária.</p></article><article><b>{eventMode ? 'Pagamento seguro' : 'PDF A4'}</b><p>{eventMode ? 'Processado pela Stripe. A BeeCraft não recebe os dados do cartão.' : 'Imprima sempre a 100%, sem “ajustar à página”.'}</p></article></div>{!eventMode && <Link className="btn secondary" to="/imanes-acessorios">Voltar aos ímanes</Link>}</div></section>
-  </main>;
+    <div>
+      <dt>Folhas A4</dt>
+      <dd>{pages || 0}</dd>
+    </div>
+    <div>
+      <dt>Por folha</dt>
+      <dd>12</dd>
+    </div>
+    <div>
+      <dt>Tamanho visível</dt>
+      <dd>50 × 50 mm</dd>
+    </div>
+  </dl>
+
+  <label>
+    Nome do cliente
+    <input
+      value={clientName}
+      maxLength="100"
+      onChange={(event) => setClientName(event.target.value)}
+      placeholder="Ex.: Maria Silva"
+    />
+  </label>
+
+  {eventMode && (
+    <>
+      <label>
+        Telefone ou email
+        <input
+          value={contact}
+          maxLength="120"
+          onChange={(event) => setContact(event.target.value)}
+          placeholder="Para confirmar a encomenda"
+        />
+      </label>
+
+      <label>
+        Entrega
+        <select
+          value={pickup}
+          onChange={(event) => setPickup(event.target.value)}
+        >
+          <option>Retirada no evento</option>
+          <option>Retirada na loja</option>
+        </select>
+      </label>
+    </>
+  )}
+
+  {!eventMode && (
+    <>
+      <label>
+        Referência da encomenda <span>(opcional)</span>
+        <input
+          value={orderReference}
+          maxLength="50"
+          onChange={(event) => setOrderReference(event.target.value)}
+          placeholder="Ex.: BC-1024"
+        />
+      </label>
+
+      <label className="builder-check">
+        <input
+          type="checkbox"
+          checked={outline}
+          onChange={(event) => setOutline(event.target.checked)}
+        />
+        Incluir contorno de corte no PDF
+      </label>
+    </>
+  )}
+
+  {eventMode ? (
+    <button
+      type="button"
+      className="btn primary btn-block"
+      disabled={items.length !== eventPackage || working}
+      onClick={payEventOrder}
+    >
+      {working ? 'A guardar pedido…' : 'Finalizar pelo WhatsApp'}
+    </button>
+  ) : (
+    <button
+      type="button"
+      className="btn primary btn-block"
+      disabled={!total || working || total > MAX_MAGNETS}
+      onClick={addPdfToCart}
+    >
+      {working ? 'A preparar…' : 'Adicionar PDF ao carrinho'}
+    </button>
+  )}
+
+  {!eventMode && (
+    <>
+      <button
+        type="button"
+        className="btn secondary btn-block"
+        disabled={!total || working || total > MAX_MAGNETS}
+        onClick={() => createPdf()}
+      >
+        Descarregar uma cópia
+      </button>
+
+      <button
+        type="button"
+        className="btn honeyed btn-block"
+        disabled={!total || working || total > MAX_MAGNETS}
+        onClick={sharePdf}
+      >
+        Enviar PDF sem comprar
+      </button>
+
+      <button
+        type="button"
+        className="builder-link"
+        disabled={working}
+        onClick={() => createPdf({ calibration: true })}
+      >
+        Descarregar folha de calibração
+      </button>
+    </>
+  )}
+
+  {items.length > 0 && (
+    <button
+      type="button"
+      className="builder-link danger"
+      onClick={() => {
+        if (window.confirm('Remover todas as fotografias deste projeto?')) {
+          setItems([]);
+          setLatestFile(null);
+          setStatus('Projeto limpo.');
+        }
+      }}
+    >
+      Limpar projeto
+    </button>
+  )}
+
+  <p className="builder-status" role="status" aria-live="polite">
+    {status}
+  </p>
+
+  <div className="builder-privacy">
+    <b>Privacidade e pagamento</b>
+    <p>
+      {eventMode
+        ? 'As fotografias são guardadas pela BeeCraft ao finalizar o pedido. O pagamento é combinado pelo WhatsApp através de MB WAY. A produção começa após a confirmação do pagamento.'
+        : 'As fotografias ficam apenas neste navegador. O PDF só é partilhado quando escolher enviá-lo.'}
+    </p>
+  </div>
+</div>
+</aside>
+</div>
+
+<section className="builder-help">
+  <div className="container">
+    <h2>Antes de enviar</h2>
+    <div>
+      <article>
+        <b>Verde</b>
+        <p>Área visível do íman. Mantenha rostos e texto dentro dela.</p>
+      </article>
+
+      <article>
+        <b>Amarelo</b>
+        <p>Linha de corte. A margem exterior garante a sangria necessária.</p>
+      </article>
+
+      <article>
+        <b>{eventMode ? 'Pagamento por MB WAY' : 'PDF A4'}</b>
+        <p>
+          {eventMode
+            ? 'Finalize pelo WhatsApp. A BeeCraft enviará as instruções para pagamento por MB WAY.'
+            : 'Imprima sempre a 100%, sem “ajustar à página”.'}
+        </p>
+      </article>
+    </div>
+
+    {!eventMode && (
+      <Link className="btn secondary" to="/imanes-acessorios">
+        Voltar aos ímanes
+      </Link>
+    )}
+  </div>
+</section>
+</main>;
 }
+

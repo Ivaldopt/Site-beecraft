@@ -31,16 +31,25 @@ export class EventOrdersService {
         amountCents,
       },
     });
-    const uploaded = [];
+    const uploaded: {
+      orderId: string;
+      url: string;
+      publicId: string;
+      sortOrder: number;
+    }[] = [];
     for (let index = 0; index < files.length; index += 1) {
       const image = await this.uploads.uploadBuffer(files[index].buffer, `beecraft/event-orders/${order.orderNumber}`);
       uploaded.push({ orderId: order.id, url: image.secure_url, publicId: image.public_id, sortOrder: index });
     }
     await this.prisma.eventArtwork.createMany({ data: uploaded });
-    const checkout = await this.stripe.createCheckout({ orderId: order.id, orderNumber, quantity, amountCents, contact: dto.contact.trim() });
-    if (!checkout.url) throw new BadRequestException('A Stripe não devolveu o endereço de pagamento');
-    await this.prisma.eventOrder.update({ where: { id: order.id }, data: { stripeSessionId: checkout.id } });
-    return { orderNumber, checkoutUrl: checkout.url };
+    return {
+      orderNumber,
+      orderId: order.id,
+      quantity,
+      amountCents,
+      paymentMethod: 'MBWAY',
+      paymentStatus: 'PENDING',
+    };
   }
 
   async confirm(sessionId: string) {

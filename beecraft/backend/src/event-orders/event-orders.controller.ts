@@ -7,7 +7,6 @@ import {
   Param,
   Patch,
   Post,
-  RawBodyRequest,
   Req,
   UploadedFiles,
   UseGuards,
@@ -20,6 +19,7 @@ import { AdminApiKeyGuard } from '../uploads/admin-api-key.guard';
 import { CreateEventOrderDto } from './dto/create-event-order.dto';
 import { UpdateEventOrderDto } from './dto/update-event-order.dto';
 import { EventOrdersService } from './event-orders.service';
+import type { RawBodyRequest } from '@nestjs/common';
 
 const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
