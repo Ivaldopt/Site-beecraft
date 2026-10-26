@@ -3,23 +3,20 @@ import {
   Body,
   Controller,
   Get,
-  Headers,
   Param,
   Patch,
   Post,
-  Req,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { Request } from 'express';
 import { Throttle } from '@nestjs/throttler';
 import { AdminApiKeyGuard } from '../uploads/admin-api-key.guard';
 import { CreateEventOrderDto } from './dto/create-event-order.dto';
 import { UpdateEventOrderDto } from './dto/update-event-order.dto';
+import { UpdateEventPaymentDto } from './dto/update-event-payment.dto';
 import { EventOrdersService } from './event-orders.service';
-import type { RawBodyRequest } from '@nestjs/common';
 
 const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
@@ -39,21 +36,6 @@ export class EventOrdersController {
     return this.service.create(dto, files ?? []);
   }
 
-  @Post('checkout/:sessionId/confirm')
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  confirm(@Param('sessionId') sessionId: string) {
-    return this.service.confirm(sessionId);
-  }
-
-  @Post('stripe/webhook')
-  webhook(
-    @Req() request: RawBodyRequest<Request>,
-    @Headers('stripe-signature') signature?: string,
-  ) {
-    if (!request.rawBody) throw new BadRequestException('Corpo original indisponível');
-    return this.service.handleWebhook(request.rawBody, signature);
-  }
-
   @Get('admin/all')
   @UseGuards(AdminApiKeyGuard)
   list() {
@@ -64,5 +46,11 @@ export class EventOrdersController {
   @UseGuards(AdminApiKeyGuard)
   updateStatus(@Param('id') id: string, @Body() dto: UpdateEventOrderDto) {
     return this.service.updateStatus(id, dto.status);
+  }
+
+  @Patch('admin/:id/payment')
+  @UseGuards(AdminApiKeyGuard)
+  updatePayment(@Param('id') id: string, @Body() dto: UpdateEventPaymentDto) {
+    return this.service.updatePayment(id, dto.paymentStatus);
   }
 }

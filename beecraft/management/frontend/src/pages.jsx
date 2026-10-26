@@ -641,6 +641,33 @@ const emptyStoreProduct = {
   categoryId: "", status: "DRAFT", saleType: "CUSTOMIZABLE", variants: [], options: [], images: [],
 };
 
+function eventPdfFromJpeg(image) {
+  const encoder = new TextEncoder(); const parts = []; const offsets = [0]; let length = 0;
+  const put = (value) => { const bytes = typeof value === "string" ? encoder.encode(value) : value; parts.push(bytes); length += bytes.length; };
+  const object = (id, body) => { offsets[id] = length; put(`${id} 0 obj\n${body}\nendobj\n`); };
+  put("%PDF-1.4\n");
+  object(1, "<< /Type /Catalog /Pages 2 0 R >>");
+  object(2, "<< /Type /Pages /Count 1 /Kids [3 0 R] >>");
+  object(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.2756 841.8898] /Resources << /XObject << /Im 4 0 R >> >> /Contents 5 0 R >>");
+  const raw = Uint8Array.from(atob(image.split(",")[1]), (character) => character.charCodeAt(0));
+  offsets[4] = length; put(`4 0 obj\n<< /Type /XObject /Subtype /Image /Width 2480 /Height 3508 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${raw.length} >>\nstream\n`); put(raw); put("\nendstream\nendobj\n");
+  const content = "q 595.2756 0 0 841.8898 0 0 cm /Im Do Q"; object(5, `<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
+  const xref = length; put(`xref\n0 ${offsets.length}\n0000000000 65535 f \n`); offsets.slice(1).forEach((offset) => put(`${String(offset).padStart(10, "0")} 00000 n \n`)); put(`trailer\n<< /Size ${offsets.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
+  return new Blob(parts, { type: "application/pdf" });
+}
+
+async function eventPrintPdf(order) {
+  const images = await Promise.all(order.artworks.map((artwork) => new Promise((resolve, reject) => {
+    const image = new Image(); image.crossOrigin = "anonymous"; image.onload = () => resolve(image); image.onerror = reject; image.src = artwork.url;
+  })));
+  const canvas = document.createElement("canvas"); canvas.width = 2480; canvas.height = 3508;
+  const context = canvas.getContext("2d"); context.fillStyle = "#fff"; context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = "#111"; context.font = "bold 42px sans-serif"; context.fillText(`BeeCraft · ${order.orderNumber}`, 105, 105);
+  const size = 709; const gapX = 70; const gapY = 70; const startX = 106; const startY = 210;
+  images.forEach((image, index) => { const x = startX + (index % 3) * (size + gapX); const y = startY + Math.floor(index / 3) * (size + gapY); context.drawImage(image, x, y, size, size); context.strokeStyle = "#aaa"; context.lineWidth = 2; context.strokeRect(x, y, size, size); });
+  const blob = eventPdfFromJpeg(canvas.toDataURL("image/jpeg", .96)); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `${order.orderNumber}-impressao.pdf`; link.click(); window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
 export function EventOrders() {
   const { data: orders, error, loading, load } = useData("/store-catalog/event-orders");
   const paid = orders.filter((order) => order.paymentStatus === "PAID");
@@ -648,11 +675,15 @@ export function EventOrders() {
     await api(`/store-catalog/event-orders/${order.id}/status`, { method: "PATCH", body: JSON.stringify({ status }) });
     load();
   };
+  const updatePayment = async (order, paymentStatus) => {
+    await api(`/store-catalog/event-orders/${order.id}/payment`, { method: "PATCH", body: JSON.stringify({ paymentStatus }) });
+    load();
+  };
   return <>
     <PageHeader title="Pedidos do evento" subtitle="Pagamentos e artes recebidos pelo QR Code" actions={<button onClick={load}>Atualizar</button>} />
     <div className="stats"><Stat label="Pedidos" value={orders.length} /><Stat label="Pagos" value={paid.length} /><Stat label="Ímanes pagos" value={paid.reduce((sum, order) => sum + order.quantity, 0)} /><Stat label="Faturação" value={money(paid.reduce((sum, order) => sum + order.amountCents / 100, 0))} /></div>
     {error && <ErrorMessage>{error}</ErrorMessage>}
-    {loading ? <Empty>A carregar pedidos…</Empty> : !orders.length ? <Empty>Ainda não existem pedidos do evento.</Empty> : <div className="panel"><table><thead><tr><th>Pedido</th><th>Cliente</th><th>Pacote</th><th>Pagamento</th><th>Produção</th><th>Artes</th><th>Ações</th></tr></thead><tbody>{orders.map((order) => <tr key={order.id}><td><b>{order.orderNumber}</b><small>{date(order.createdAt)}</small></td><td>{order.customerName}<small>{order.contact}<br />{order.pickup}</small></td><td>{order.quantity} · {money(order.amountCents / 100)}</td><td>{order.paymentStatus}</td><td>{order.status}</td><td><div className="event-artworks">{order.artworks.map((art) => <a key={art.id} href={art.url} target="_blank" rel="noreferrer"><img src={art.url} alt="Arte do íman" /></a>)}</div></td><td><select value={order.status} disabled={order.paymentStatus !== "PAID"} onChange={(event) => update(order, event.target.value)}><option value="WAITING">Aguardando</option><option value="IN_PRODUCTION">Em produção</option><option value="READY">Pronto</option><option value="DELIVERED">Entregue</option><option value="CANCELLED">Cancelado</option></select></td></tr>)}</tbody></table></div>}
+    {loading ? <Empty>A carregar pedidos…</Empty> : !orders.length ? <Empty>Ainda não existem pedidos do evento.</Empty> : <div className="panel"><table><thead><tr><th>Pedido</th><th>Cliente</th><th>Pacote</th><th>Pagamento MB WAY</th><th>Produção</th><th>Artes</th><th>Ações</th></tr></thead><tbody>{orders.map((order) => <tr key={order.id}><td><b>{order.orderNumber}</b><small>{date(order.createdAt)}</small></td><td>{order.customerName}<small>{order.contact}<br />{order.pickup}</small></td><td>{order.quantity} · {money(order.amountCents / 100)}</td><td><select value={order.paymentStatus === "PAID" ? "PAID" : "PENDING"} onChange={(event) => updatePayment(order, event.target.value)}><option value="PENDING">A confirmar</option><option value="PAID">Recebido</option></select></td><td>{order.status}</td><td><div className="event-artworks">{order.artworks.map((art) => <a key={art.id} href={art.url} target="_blank" rel="noreferrer"><img src={art.url} alt="Arte do íman" /></a>)}</div></td><td><div className="table-actions"><button onClick={() => eventPrintPdf(order)}>PDF de impressão</button><select value={order.status} disabled={order.paymentStatus !== "PAID"} onChange={(event) => update(order, event.target.value)}><option value="WAITING">Aguardando</option><option value="IN_PRODUCTION">Em produção</option><option value="READY">Pronto</option><option value="DELIVERED">Entregue</option><option value="CANCELLED">Cancelado</option></select></div></td></tr>)}</tbody></table></div>}
   </>;
 }
 

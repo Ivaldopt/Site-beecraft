@@ -63,3 +63,7 @@ async def event_orders(_: CurrentUser): return await relay("GET", "/event-orders
 @router.patch("/event-orders/{order_id}/status")
 async def update_event_order(order_id: str, payload: dict, _: CurrentUser):
     return await relay("PATCH", f"/event-orders/admin/{order_id}/status", json=payload)
+
+@router.patch("/event-orders/{order_id}/payment")
+async def update_event_order_payment(order_id: str, payload: dict, _: CurrentUser):
+    return await relay("PATCH", f"/event-orders/admin/{order_id}/payment", json=payload)

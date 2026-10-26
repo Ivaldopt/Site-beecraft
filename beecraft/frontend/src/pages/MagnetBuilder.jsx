@@ -268,20 +268,6 @@ export default function MagnetBuilder({ eventMode = false }) {
       .catch(() => setStatus('O montador funciona, mas não foi possível carregar o preço do produto.'));
   }, [eventMode]);
 
-  useEffect(() => {
-    if (!eventMode) return;
-    const params = new URLSearchParams(window.location.search);
-    const sessionId = params.get('session_id');
-    if (params.get('payment') === 'cancelled') setStatus('Pagamento cancelado. Pode tentar novamente.');
-    if (params.get('payment') === 'success' && sessionId) {
-      setWorking(true);
-      api.post(`/event-orders/checkout/${encodeURIComponent(sessionId)}/confirm`)
-        .then(({ data }) => setStatus(data.paid ? `Pagamento confirmado. Encomenda ${data.orderNumber} recebida!` : `Encomenda ${data.orderNumber} criada. O pagamento está a ser confirmado.`))
-        .catch(() => setStatus('Pagamento concluído. A confirmação automática está a ser atualizada.'))
-        .finally(() => setWorking(false));
-    }
-  }, [eventMode]);
-
   async function addFiles(fileList) {
     const files = Array.from(fileList ?? []);
     if (!files.length) return;
@@ -431,8 +417,12 @@ export default function MagnetBuilder({ eventMode = false }) {
       setStatus('Preencha o nome e o telefone ou email.');
       return;
     }
+    if (!WHATSAPP_NUMBER) {
+      setStatus('O contacto WhatsApp da loja ainda não está configurado.');
+      return;
+    }
     setWorking(true);
-    setStatus('A preparar as artes e o pagamento seguro…');
+    setStatus('A guardar as artes e a preparar o WhatsApp…');
     try {
       const form = new FormData();
       form.append('customerName', clientName.trim());
@@ -463,12 +453,10 @@ export default function MagnetBuilder({ eventMode = false }) {
         'Aguardo as instruções para pagamento.'
       ].join('\n');
 
-      window.location.assign(
-        `https://wa.me/351915099277?text=${encodeURIComponent(mensagem)}`
-      );
+      window.location.assign(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(mensagem)}`);
     } catch (error) {
       const message = error.response?.data?.message;
-      setStatus(Array.isArray(message) ? message.join(' ') : message ?? 'Não foi possível iniciar o pagamento. Tente novamente.');
+      setStatus(Array.isArray(message) ? message.join(' ') : message ?? 'Não foi possível guardar o pedido. Tente novamente.');
       setWorking(false);
     }
   }

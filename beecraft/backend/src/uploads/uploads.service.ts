@@ -14,10 +14,11 @@ export class UploadsService {
   uploadBuffer(
     buffer: Buffer,
     folder = 'beecraft',
+    authenticated = false,
   ): Promise<{ secure_url: string; public_id: string }> {
     return new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
-        { folder },
+        { folder, type: authenticated ? 'authenticated' : 'upload' },
         (error, result) => {
           if (error || !result) {
             return reject(
@@ -31,6 +32,21 @@ export class UploadsService {
         },
       );
       Readable.from(buffer).pipe(stream);
+    });
+  }
+
+  deleteAsset(publicId: string, authenticated = false) {
+    return cloudinary.uploader.destroy(publicId, {
+      resource_type: 'image',
+      type: authenticated ? 'authenticated' : 'upload',
+    });
+  }
+
+  privateUrl(publicId: string) {
+    return cloudinary.url(publicId, {
+      type: 'authenticated',
+      secure: true,
+      sign_url: true,
     });
   }
 
