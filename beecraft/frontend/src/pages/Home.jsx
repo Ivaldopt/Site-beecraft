@@ -25,6 +25,8 @@ export default function Home() {
   const [subscribed, setSubscribed] = useState(false);
   const [company, setCompany] = useState({ name: '', contact: '', email: '', quantity: '', details: '' });
   const [heroSlide, setHeroSlide] = useState(0);
+  const [heroPlaying, setHeroPlaying] = useState(true); // escolha da pessoa (botão pausa/play)
+  const [heroInteracting, setHeroInteracting] = useState(false); // rato ou teclado dentro do banner
   const [reviews, setReviews] = useState([]);
   const [review, setReview] = useState({ name: '', city: '', rating: 5, comment: '' });
   const [reviewStatus, setReviewStatus] = useState('');
@@ -70,10 +72,14 @@ export default function Home() {
     { eyebrow: 'BeeCraft para empresas', title: 'Brindes personalizados que deixam marca.', text: 'Agendas, cadernos e conjuntos para equipas, clientes, eventos e datas especiais.', primary: 'Pedir orçamento', primaryTo: '/#empresas', secondary: 'Ver brindes', secondaryTo: '/brindes', theme: 'business' },
   ];
 
+  const heroAutoplay = heroPlaying && !heroInteracting;
+
   useEffect(() => {
+    // Sem rotação automática se a pessoa pediu menos movimento, pausou, ou está a interagir com o banner.
+    if (!heroAutoplay || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
     const timer = window.setInterval(() => setHeroSlide((current) => (current + 1) % heroSlides.length), 6500);
     return () => window.clearInterval(timer);
-  }, [heroSlides.length]);
+  }, [heroAutoplay, heroSlides.length]);
   function requestCompanyQuote(event) {
     event.preventDefault();
     const message = [
@@ -89,9 +95,17 @@ export default function Home() {
   }
   return (
     <main>
-      <section className={`hero hero-carousel hero-${heroSlides[heroSlide].theme}`} aria-roledescription="carrossel" aria-label="Destaques BeeCraft">
+      <section
+        className={`hero hero-carousel hero-${heroSlides[heroSlide].theme}`}
+        aria-roledescription="carrossel"
+        aria-label="Destaques BeeCraft"
+        onMouseEnter={() => setHeroInteracting(true)}
+        onMouseLeave={() => setHeroInteracting(false)}
+        onFocus={() => setHeroInteracting(true)}
+        onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setHeroInteracting(false); }}
+      >
         <div className="container hero-grid">
-          <div className="hero-copy" key={heroSlide} aria-live="polite">
+          <div className="hero-copy" key={heroSlide} aria-live={heroAutoplay ? 'off' : 'polite'}>
             <div className="eyebrow">{heroSlides[heroSlide].eyebrow}</div>
             <h1>{heroSlides[heroSlide].title}</h1>
             <p className="lead">{heroSlides[heroSlide].text}</p>
@@ -110,6 +124,9 @@ export default function Home() {
         </div>
         <div className="container hero-controls">
           <div>{heroSlides.map((slide, index) => <button type="button" key={slide.theme} className={heroSlide === index ? 'active' : ''} onClick={() => setHeroSlide(index)} aria-label={`Mostrar banner ${index + 1}`} aria-current={heroSlide === index ? 'true' : undefined} />)}</div>
+          <button type="button" className="hero-pause" onClick={() => setHeroPlaying((playing) => !playing)} aria-label={heroPlaying ? 'Pausar a rotação automática dos banners' : 'Retomar a rotação automática dos banners'}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">{heroPlaying ? <path d="M8 5v14M16 5v14" /> : <path d="M7 4.5v15l12-7.5z" />}</svg>
+          </button>
         </div>
       </section>
 
