@@ -6,10 +6,15 @@ import eventsImage from '../assets/services/eventos.jpg';
 export default function Header() {
   const { totalItems } = useCart();
   const [worksOpen, setWorksOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const closeMenu = () => setWorksOpen(false);
+  // Fecha o menu móvel ao tocar em qualquer ligação ou ao carregar em Escape.
+  const handleNavClick = (event) => { if (event.target.closest('a')) setMobileOpen(false); };
+  const handleNavKeyDown = (event) => { if (event.key === 'Escape') setMobileOpen(false); };
   return <><div className="topbar">Personalização artesanal · Produzido em Loulé, Algarve · Envio para Portugal e Espanha</div><header className="site-header"><div className="container nav">
     <Link className="logo" to="/">Bee<span>craft</span></Link>
-    <nav className="menu" aria-label="Navegação principal">
+    <nav id="menu-principal" className={`menu ${mobileOpen ? 'mobile-open' : ''}`} aria-label="Navegação principal" onClick={handleNavClick} onKeyDown={handleNavKeyDown}>
+      <NavLink className="menu-mobile-only" to="/loja">Toda a loja</NavLink>
       <NavLink to="/agendas-planners">Agendas e planners</NavLink><NavLink to="/cadernos">Cadernos</NavLink><NavLink to="/imanes-acessorios">Ímanes</NavLink>
       <div className={`services-menu ${worksOpen ? 'open' : ''}`} onMouseEnter={() => setWorksOpen(true)} onMouseLeave={closeMenu} onFocus={() => setWorksOpen(true)} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) closeMenu(); }} onKeyDown={(event) => { if (event.key === 'Escape') closeMenu(); }}>
         <NavLink to="/nossos-trabalhos" className="services-trigger" onClick={closeMenu} aria-expanded={worksOpen}>Nossos trabalhos <span>⌄</span></NavLink>
@@ -18,6 +23,10 @@ export default function Header() {
         </div>
       </div><Link to="/#empresas">Para empresas</Link><NavLink to="/sobre-nos">Sobre nós</NavLink>
     </nav>
-    <div className="actions"><Link className="icon" to="/loja" aria-label="Pesquisar produtos"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg></Link><Link className="icon" to="/carrinho" aria-label={`Carrinho com ${totalItems} artigos`}><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1.4" /><circle cx="18" cy="21" r="1.4" /><path d="M2 3h2l2.4 12.2A2 2 0 0 0 8.4 17H18a2 2 0 0 0 2-1.6L21.6 7H6" /></svg><b>{totalItems}</b></Link></div>
+    <div className="actions"><Link className="icon" to="/loja" aria-label="Pesquisar produtos"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg></Link><Link className="icon" to="/carrinho" aria-label={`Carrinho com ${totalItems} artigos`}><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1.4" /><circle cx="18" cy="21" r="1.4" /><path d="M2 3h2l2.4 12.2A2 2 0 0 0 8.4 17H18a2 2 0 0 0 2-1.6L21.6 7H6" /></svg><b>{totalItems}</b></Link>
+      <button type="button" className="mobile-toggle" aria-label={mobileOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={mobileOpen} aria-controls="menu-principal" onClick={() => setMobileOpen((open) => !open)}>
+        <svg viewBox="0 0 24 24" aria-hidden="true">{mobileOpen ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}</svg>
+      </button>
+    </div>
   </div></header></>;
 }
