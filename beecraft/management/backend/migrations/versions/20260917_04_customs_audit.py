@@ -10,7 +10,9 @@ depends_on = None
 
 
 def upgrade():
-    op.execute("CREATE SEQUENCE customs_declaration_number_seq START WITH 1")
+    op.execute("CREATE SEQUENCE IF NOT EXISTS customs_declaration_number_seq START WITH 1")
+    if sa.inspect(op.get_bind()).has_table("customs_declarations"):
+        return  # já criada pela migração 01 (create_all) numa base nova
     op.create_table(
         "customs_declarations",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),

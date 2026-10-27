@@ -10,6 +10,8 @@ depends_on = None
 
 
 def upgrade():
+    if sa.inspect(op.get_bind()).has_table("business_costs"):
+        return  # já criada pela migração 01 (create_all) numa base nova
     cost_type = postgresql.ENUM("FIXED", "VARIABLE", name="businesscosttype", create_type=False)
     cost_type.create(op.get_bind(), checkfirst=True)
     op.create_table(

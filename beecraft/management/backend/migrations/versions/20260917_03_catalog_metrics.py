@@ -14,6 +14,8 @@ depends_on = None
 
 
 def upgrade():
+    if sa.inspect(op.get_bind()).has_table("catalog_events"):
+        return  # já criada pela migração 01 (create_all) numa base nova
     event_type = postgresql.ENUM(
         "PAGE_VIEW", "PRODUCT_VIEW", "ADD_TO_CART", "WHATSAPP_CLICK",
         name="catalogeventtype", create_type=False,
