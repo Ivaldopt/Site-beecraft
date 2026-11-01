@@ -11,6 +11,8 @@ import { APP_GUARD } from '@nestjs/core';
 import { OrdersModule } from './orders/orders.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { EventOrdersModule } from './event-orders/event-orders.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
@@ -28,6 +30,7 @@ import { EventOrdersModule } from './event-orders/event-orders.module';
     ReviewsModule,
     EventOrdersModule,
   ],
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+  controllers: [AppController],
+  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}
