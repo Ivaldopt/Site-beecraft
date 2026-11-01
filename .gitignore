@@ -1,0 +1,20 @@
+# Dependências (instalam-se com npm ci / pnpm install, não vão para o Git)
+node_modules/
+
+# Resultado de builds
+dist/
+dist-ssr/
+
+# Segredos e configuração local (os ficheiros .env.example continuam versionados)
+.env.local
+.env.*.local
+backend/.env
+management/backend/.env
+
+# Sistema e editores
+.DS_Store
+Thumbs.db
+*.log
+.vscode/*
+!.vscode/extensions.json
+.idea/

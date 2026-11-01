@@ -58,10 +58,16 @@ Variáveis de build:
 STORE_API_URL=https://DOMINIO-DA-API-LOJA
 MANAGEMENT_API_URL=https://DOMINIO-DA-API-GESTAO/api
 VITE_MAINTENANCE_MODE=false
-VITE_EVENT_MODE=true
+VITE_EVENT_MODE=false
 VITE_WHATSAPP_NUMBER=351915099277
 VITE_PRODUCTION_ESTIMATE=5 a 7 dias úteis
 ```
+
+`VITE_EVENT_MODE=true` mostra só a página de ímanes para eventos (pagamento
+online); `false` publica a loja completa, onde o pedido termina no WhatsApp.
+As variáveis definidas no painel da Vercel têm prioridade sobre
+`frontend/.env.production`, por isso é lá que se muda de modo (e depois é
+preciso fazer um novo deploy, porque são variáveis de *build*).
 
 No serviço Railway da API da loja, configure também:
 

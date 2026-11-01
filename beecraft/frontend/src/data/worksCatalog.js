@@ -1,7 +1,7 @@
-import commerceImage from '../assets/works/comercio-local.png';
-import hospitalityImage from '../assets/works/restauracao-hotelaria.png';
-import eventsImage from '../assets/works/eventos.png';
-import companiesImage from '../assets/works/empresas.png';
+import commerceImage from '../assets/works/comercio-local.webp';
+import hospitalityImage from '../assets/works/restauracao-hotelaria.webp';
+import eventsImage from '../assets/works/eventos.webp';
+import companiesImage from '../assets/works/empresas.webp';
 
 export const workCategories = {
   'comercio-local': { title: 'Comércio Local', eyebrow: 'Faça a sua marca crescer', description: 'Peças essenciais para apresentar, divulgar e fidelizar clientes.', image: commerceImage, products: [

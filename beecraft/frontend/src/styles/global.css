@@ -53,8 +53,21 @@ img{max-width:100%;display:block}
 .icon:hover{border-color:var(--terracotta)}
 .icon svg{width:17px;height:17px;stroke:var(--ink);fill:none;stroke-width:1.7}
 .icon b{position:absolute;right:-4px;top:-4px;background:var(--terracotta);color:#fff;width:17px;height:17px;border-radius:50%;font-size:10px;font-weight:700;display:grid;place-items:center}
-.mobile-toggle{display:none}
-@media(max-width:900px){.menu{display:none}.mobile-toggle{display:grid}}
+.mobile-toggle{display:none;width:40px;height:40px;border:1px solid var(--line);border-radius:50%;background:#fff;place-items:center;transition:.15s}
+.mobile-toggle:hover{border-color:var(--terracotta)}
+.mobile-toggle svg{width:19px;height:19px;stroke:var(--ink);fill:none;stroke-width:1.8;stroke-linecap:round}
+.menu-mobile-only{display:none}
+@media(max-width:900px){
+ .mobile-toggle{display:grid}
+ .menu{display:none}
+ /* Menu móvel: gaveta por baixo do cabeçalho */
+ .menu.mobile-open{display:flex;position:absolute;top:100%;left:0;right:0;flex-direction:column;gap:0;padding:6px 20px 20px;background:var(--paper);border-bottom:1px solid var(--line);box-shadow:0 24px 40px rgba(45,35,25,.14);max-height:calc(100vh - 110px);overflow-y:auto}
+ .menu.mobile-open a{display:block;padding:16px 2px;font-size:16px;border-bottom:1px solid var(--line)}
+ .menu.mobile-open>a:last-child{border-bottom:0}
+ .menu.mobile-open .menu-mobile-only{display:block}
+ .menu.mobile-open .services-menu{position:static}
+ .menu.mobile-open .services-trigger span{display:none}
+}
 
 /* BUTTONS */
 .btn{border:0;border-radius:999px;padding:15px 26px;font-weight:800;font-size:13.5px;display:inline-flex;align-items:center;gap:8px;letter-spacing:.01em;transition:.18s}
@@ -102,6 +115,9 @@ h1{font-size:clamp(40px,5.6vw,70px);line-height:.98;letter-spacing:-3px;max-widt
 .hero-controls>div{display:flex;align-items:center;gap:7px}
 .hero-controls>div button{width:8px;height:8px;border-radius:999px;background:rgba(36,32,29,.3);transition:.2s}
 .hero-controls>div button.active{width:25px;background:var(--terracotta)}
+.hero-pause{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.7);border:1px solid rgba(36,32,29,.18);transition:.2s}
+.hero-pause:hover{border-color:var(--terracotta)}
+.hero-pause svg{width:13px;height:13px;stroke:var(--ink);fill:var(--ink);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .product-card{position:absolute;background:#fff;border:1px solid var(--line);border-radius:25px;box-shadow:0 25px 70px rgba(36,32,29,.13);padding:16px;transition:.25s}
 .product-card.main{width:290px;height:360px;right:20px;top:20px;transform:rotate(4deg)}
 .product-card.small{width:180px;height:225px;left:20px;bottom:15px;transform:rotate(-7deg)}
