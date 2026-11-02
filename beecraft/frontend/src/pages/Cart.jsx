@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { createWhatsappUrl } from '../components/WhatsappFab';
 import api from '../api/client';
+import { createOrderMessage, money, savePendingOrder } from '../utils/orderMessage';
 import { trackCatalogEvent } from '../utils/analytics';
 import { deleteCartAttachment, getCartAttachment } from '../utils/cartAttachments';
 
-const money = (value) =>
-  new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value);
+// Só ativar (VITE_MBWAY_ENABLED=true) depois de a Stripe estar configurada no Railway.
+const MBWAY_ENABLED = import.meta.env.VITE_MBWAY_ENABLED === 'true';
 
 export default function Cart() {
   const { items, removeItem, updateQuantity, clearCart, totalPrice } = useCart();
@@ -21,37 +22,18 @@ export default function Cart() {
     setCustomer((current) => ({ ...current, [event.target.name]: event.target.value }));
   }
 
-  function createVerifiedMessage(order) {
-    return [
-      `Olá! Gostaria de confirmar o pedido ${order.orderNumber}:`,
-      '',
-      ...order.items.flatMap((item, index) => [
-        `${index + 1}. ${item.productName}${item.variantName ? ` — ${item.variantName}` : ''}`,
-        ...item.options.map((option) => `   • ${option.name}`),
-        ...(item.customizationText ? [`   • Texto: ${item.customizationText}`] : []),
-        ...(item.customizationTextColor ? [`   • Cor do texto: ${item.customizationTextColor}`] : []),
-        ...Object.entries(item.customizationDetails ?? {}).filter(([, value]) => value).map(([key, value]) => `   • ${{ orientation: 'Orientação', columns: 'Nº de colunas', startMonth: 'Início', appointmentHours: 'Horário', coverInstructions: 'Capa', elasticColor: 'Elástico', coilColor: 'Espiral' }[key] || key}: ${value}`),
-        ...(item.customizationFileName
-          ? [`   • Ficheiro a enviar: ${item.customizationFileName}`]
-          : []),
-        `   Quantidade: ${item.quantity} | Subtotal: ${money(item.total)}`,
-        '',
-      ]),
-      `Total validado: ${money(order.total)}`,
-      '',
-      'Podem confirmar o prazo de produção e os dados para entrega?',
-    ].join('\n');
-  }
+  const createVerifiedMessage = (order) => createOrderMessage(order);
 
   async function handleCheckout(event) {
     event.preventDefault();
+    const payOnline = MBWAY_ENABLED && event.nativeEvent.submitter?.value !== 'whatsapp';
     setSubmitting(true);
     setCheckoutError('');
     setCheckoutNotice('');
     setFallbackWhatsappUrl('');
     const attachmentItems = items.filter((item) => item.attachmentId);
     // Open synchronously from the submit gesture so popup blockers do not stop WhatsApp.
-    const whatsappWindow = window.open('about:blank', '_blank');
+    const whatsappWindow = payOnline ? null : window.open('about:blank', '_blank');
     if (whatsappWindow) whatsappWindow.opener = null;
 
     try {
@@ -72,6 +54,13 @@ export default function Cart() {
           customizationFileName: item.customizationFileName || undefined,
         })),
       });
+      if (payOnline) {
+        // Pagamento MB WAY na página segura da Stripe; o WhatsApp abre depois de o pagamento cair.
+        savePendingOrder(order.id, attachmentItems.map((item) => item.attachmentId));
+        const { data: checkout } = await api.post(`/orders/${order.id}/checkout`);
+        window.location.assign(checkout.url);
+        return;
+      }
       const whatsappUrl = createWhatsappUrl(createVerifiedMessage(order));
       trackCatalogEvent('WHATSAPP_CLICK');
       const files = (await Promise.all(attachmentItems.map((item) => getCartAttachment(item.attachmentId).catch(() => null)))).filter(Boolean);
@@ -201,6 +190,7 @@ export default function Cart() {
             <h3>Resumo</h3>
             <div><span>Subtotal</span><strong>{money(totalPrice)}</strong></div>
             <p>Envio e prazo de produção serão confirmados no WhatsApp.</p>
+            {new URLSearchParams(window.location.search).get('pagamento') === 'cancelado' && <p className="form-error" role="status">O pagamento foi cancelado. O seu carrinho continua guardado.</p>}
             <form className="checkout-form" onSubmit={handleCheckout}>
               <div className="field">
                 <label htmlFor="checkout-name">Nome *</label>
@@ -216,8 +206,16 @@ export default function Cart() {
               </div>
               {checkoutError && <p className="form-error" role="alert">{checkoutError}</p>}
               {checkoutNotice && <p className="checkout-notice" role="status">{checkoutNotice}</p>}
-              <button className="btn whatsapp-btn btn-block" type="submit" disabled={submitting}>
-                {submitting ? 'A preparar pedido e PDF...' : items.some((item) => item.attachmentId) ? 'Enviar pedido e PDF pelo WhatsApp' : 'Finalizar pelo WhatsApp'}
+              {MBWAY_ENABLED && (
+                <>
+                  <button className="btn primary btn-block" type="submit" value="mbway" disabled={submitting}>
+                    {submitting ? 'A preparar pagamento...' : `Pagar ${money(totalPrice)} com MB WAY`}
+                  </button>
+                  <p className="checkout-hint">Pagamento seguro pela Stripe. Aprova no telemóvel e voltamos a falar consigo no WhatsApp.</p>
+                </>
+              )}
+              <button className={`btn whatsapp-btn btn-block${MBWAY_ENABLED ? ' btn-secondary-whatsapp' : ''}`} type="submit" value="whatsapp" disabled={submitting}>
+                {submitting && !MBWAY_ENABLED ? 'A preparar pedido e PDF...' : MBWAY_ENABLED ? 'Prefiro combinar pelo WhatsApp' : items.some((item) => item.attachmentId) ? 'Enviar pedido e PDF pelo WhatsApp' : 'Finalizar pelo WhatsApp'}
               </button>
               {fallbackWhatsappUrl && (
                 <a className="checkout-fallback" href={fallbackWhatsappUrl} target="_blank" rel="noreferrer">

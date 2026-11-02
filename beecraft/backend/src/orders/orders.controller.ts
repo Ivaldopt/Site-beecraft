@@ -1,5 +1,6 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { AdminApiKeyGuard } from '../uploads/admin-api-key.guard';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrdersService } from './orders.service';
 
@@ -11,5 +12,11 @@ export class OrdersController {
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   create(@Body() dto: CreateOrderDto) {
     return this.ordersService.create(dto);
+  }
+
+  @Get('admin/all')
+  @UseGuards(AdminApiKeyGuard)
+  listForAdmin() {
+    return this.ordersService.listForAdmin();
   }
 }

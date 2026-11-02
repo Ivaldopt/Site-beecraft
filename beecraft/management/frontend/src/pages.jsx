@@ -668,6 +668,29 @@ async function eventPrintPdf(order) {
   const blob = eventPdfFromJpeg(canvas.toDataURL("image/jpeg", .96)); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `${order.orderNumber}-impressao.pdf`; link.click(); window.setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
+const storePaymentLabels = { PAID: "Pago ✅", PENDING: "A aguardar MB WAY", FAILED: "Falhou", EXPIRED: "Expirou" };
+
+export function StoreOrders() {
+  const { data: orders, error, loading, load } = useData("/store-catalog/orders");
+  const [filter, setFilter] = useState("PAID");
+  const paid = orders.filter((order) => order.paymentStatus === "PAID");
+  const visible = filter === "ALL" ? orders : orders.filter((order) => order.paymentStatus === filter);
+  return <>
+    <PageHeader eyebrow="Encomendas feitas no site, com o estado do pagamento MB WAY" title="Pedidos da loja" action={<button onClick={load}>Atualizar</button>} />
+    <div className="stats"><Stat label="Pedidos" value={orders.length} /><Stat label="Pagos" value={paid.length} /><Stat label="Por pagar" value={orders.filter((order) => order.paymentStatus === "PENDING").length} /><Stat label="Faturação paga" value={money(paid.reduce((sum, order) => sum + order.total, 0))} /></div>
+    <div style={{ margin: "0 0 14px" }}><select value={filter} onChange={(event) => setFilter(event.target.value)}><option value="PAID">Só pagos</option><option value="PENDING">A aguardar pagamento</option><option value="ALL">Todos</option></select></div>
+    <ErrorMessage error={error} />
+    {loading ? <Empty>A carregar pedidos…</Empty> : !visible.length ? <Empty>Sem pedidos neste filtro.</Empty> : <div className="panel"><table><thead><tr><th>Pedido</th><th>Cliente</th><th>Artigos</th><th>Total</th><th>Pagamento</th><th>Data</th></tr></thead><tbody>{visible.map((order) => <tr key={order.id}>
+      <td><b>{order.orderNumber}</b></td>
+      <td>{order.customer.name}<br /><small>{order.customer.email}{order.customer.phone ? ` · ${order.customer.phone}` : ""}</small></td>
+      <td>{order.items.map((item, index) => <div key={index}>{item.quantity}× {item.productName}{item.variantName ? ` — ${item.variantName}` : ""}{item.options.length ? <small> · {item.options.map((option) => option.name).join(", ")}</small> : null}{item.customizationText ? <small> · Texto: {item.customizationText}</small> : null}{item.customizationFileName ? <small> · PDF: {item.customizationFileName}</small> : null}</div>)}</td>
+      <td>{money(order.total)}</td>
+      <td>{storePaymentLabels[order.paymentStatus] ?? order.paymentStatus}{order.paidAt ? <><br /><small>{new Date(order.paidAt).toLocaleString("pt-PT")}</small></> : null}</td>
+      <td>{new Date(order.createdAt).toLocaleString("pt-PT")}</td>
+    </tr>)}</tbody></table></div>}
+  </>;
+}
+
 export function EventOrders() {
   const { data: orders, error, loading, load } = useData("/store-catalog/event-orders");
   const paid = orders.filter((order) => order.paymentStatus === "PAID");

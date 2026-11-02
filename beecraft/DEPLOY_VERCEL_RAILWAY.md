@@ -69,15 +69,38 @@ As variáveis definidas no painel da Vercel têm prioridade sobre
 `frontend/.env.production`, por isso é lá que se muda de modo (e depois é
 preciso fazer um novo deploy, porque são variáveis de *build*).
 
-No serviço Railway da API da loja, configure também:
+## Pagamento por MB WAY (Stripe) e email de aviso (Resend)
+
+O cliente paga na página segura da Stripe; quando o pagamento cai, o pedido
+passa a "Pago", a BeeCraft recebe um email, aparece em `/adm` → "Pedidos da
+loja" e o site abre o WhatsApp com o resumo do pedido.
+
+No serviço Railway da API da loja (**Site-Bee**) configure:
 
 ```text
 PUBLIC_STORE_URL=https://www.beecraft.pt
-STRIPE_SECRET_KEY=<chave secreta da conta Stripe>
-STRIPE_WEBHOOK_SECRET=<segredo do webhook Stripe>
+STRIPE_SECRET_KEY=<chave secreta da conta Stripe (sk_live_...)>
+STRIPE_WEBHOOK_SECRET=<segredo do webhook (whsec_...)>
+RESEND_API_KEY=<chave da conta Resend (re_...)>
+MAIL_FROM=BeeCraft <pedidos@beecraft.pt>
+ORDER_NOTIFY_EMAIL=<email(s) que recebem o aviso, separados por vírgula>
 ```
 
-Crie na Stripe um webhook para `https://DOMINIO-DA-API-LOJA/event-orders/stripe/webhook` com os eventos `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` e `checkout.session.expired`.
+1. **Stripe → Definições → Métodos de pagamento**: ative o **MB WAY**.
+2. **Stripe → Programadores → Webhooks → Adicionar destino**, endpoint
+   `https://DOMINIO-DA-API-LOJA/payments/stripe/webhook`, com os eventos
+   `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
+   `checkout.session.async_payment_failed` e `checkout.session.expired`.
+   Copie o "Segredo de assinatura" para `STRIPE_WEBHOOK_SECRET`.
+3. **Resend**: verifique o domínio `beecraft.pt` (registos DNS) para poder
+   enviar a partir de `pedidos@beecraft.pt`.
+4. Na **Vercel**, só depois de tudo acima, defina `VITE_MBWAY_ENABLED=true` e
+   faça Redeploy. Com `false` (ou sem a variável) o carrinho continua a
+   terminar só no WhatsApp.
+
+Limites do MB WAY na Stripe: só clientes particulares, de 0,50 € a 5.000 €, e
+o cliente tem 4 minutos para aprovar no telemóvel. Pedidos fora disto continuam
+a poder ser combinados pelo WhatsApp.
 
 O build gera uma única publicação: a loja fica na raiz e o painel em `/adm/`.
 
