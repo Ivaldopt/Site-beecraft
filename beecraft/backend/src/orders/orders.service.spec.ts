@@ -2,6 +2,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { PricingService } from '../pricing/pricing.service';
+import { TERMS_VERSION } from '../legal/terms-version';
 import { OrdersService } from './orders.service';
 
 describe('OrdersService', () => {
@@ -45,6 +46,9 @@ describe('OrdersService', () => {
 
     const result = await service.create({
       customer: { name: 'Maria Silva', email: 'MARIA@example.com' },
+      termsAccepted: true,
+      termsVersion: TERMS_VERSION,
+      marketingOptIn: true,
       items: [
         {
           productId: 'product-1',
@@ -61,8 +65,26 @@ describe('OrdersService', () => {
     );
     expect(transaction.order.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ subtotal: 54, total: 54 }),
+        data: expect.objectContaining({
+          subtotal: 54,
+          total: 54,
+          termsVersion: TERMS_VERSION,
+          termsAcceptedAt: expect.any(Date),
+        }),
       }),
     );
+    expect(transaction.customer.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ marketingOptIn: true, marketingOptInAt: expect.any(Date) }),
+      }),
+    );
+    await expect(
+      service.create({
+        customer: { name: 'Maria Silva', email: 'maria@example.com' },
+        termsAccepted: true,
+        termsVersion: '1999-01-01',
+        items: [],
+      }),
+    ).rejects.toThrow('Termos');
   });
 });

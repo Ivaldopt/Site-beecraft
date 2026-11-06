@@ -1,3 +1,5 @@
+import { hasConsent } from '../consent/consent';
+
 const METRICS_URL = import.meta.env.VITE_MANAGEMENT_API_URL
   ?? (import.meta.env.DEV ? 'http://localhost:8000/api' : '/adm-api');
 
@@ -11,6 +13,8 @@ function visitorId() {
 }
 
 export function trackCatalogEvent(eventType, productSlug = null, path = window.location.pathname) {
+  // Métricas internas só com o consentimento de estatísticas.
+  if (!hasConsent('analytics')) return;
   fetch(`${METRICS_URL}/public/metrics/event`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PricingService } from '../pricing/pricing.service';
+import { TERMS_VERSION } from '../legal/terms-version';
 import { toPublicItem } from '../payments/order-view';
 import { CreateOrderDto } from './dto/create-order.dto';
 
@@ -14,6 +15,11 @@ export class OrdersService {
   ) {}
 
   async create(dto: CreateOrderDto) {
+    if (dto.termsVersion !== TERMS_VERSION) {
+      throw new BadRequestException(
+        'Os Termos foram atualizados. Recarregue a página e tente novamente.',
+      );
+    }
     const pricedItems = await Promise.all(
       dto.items.map(async (item) => ({
         request: item,
@@ -31,6 +37,7 @@ export class OrdersService {
       0,
     );
     const orderNumber = this.createOrderNumber();
+    const acceptedAt = new Date();
     const normalizedEmail = dto.customer.email.trim().toLowerCase();
     const normalizedName = dto.customer.name.trim();
     const normalizedPhone = dto.customer.phone?.replace(/\s+/g, '') || null;
@@ -38,11 +45,29 @@ export class OrdersService {
     const order = await this.prisma.$transaction(async (transaction) => {
       const customer = await transaction.customer.upsert({
         where: { email: normalizedEmail },
-        update: { name: normalizedName, phone: normalizedPhone },
+        update: {
+          name: normalizedName,
+          phone: normalizedPhone,
+          // Só regista o consentimento; nunca o retira em silêncio.
+          ...(dto.marketingOptIn
+            ? {
+                marketingOptIn: true,
+                marketingOptInAt: acceptedAt,
+                marketingOptInVersion: TERMS_VERSION,
+              }
+            : {}),
+        },
         create: {
           name: normalizedName,
           email: normalizedEmail,
           phone: normalizedPhone,
+          ...(dto.marketingOptIn
+            ? {
+                marketingOptIn: true,
+                marketingOptInAt: acceptedAt,
+                marketingOptInVersion: TERMS_VERSION,
+              }
+            : {}),
         },
       });
 
@@ -50,6 +75,8 @@ export class OrdersService {
         data: {
           orderNumber,
           customerId: customer.id,
+          termsVersion: TERMS_VERSION,
+          termsAcceptedAt: acceptedAt,
           subtotal,
           total: subtotal,
           items: {

@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { TERMS_VERSION } from '../legal/terms-version';
 import { UploadsService } from '../uploads/uploads.service';
 import { CreateEventOrderDto } from './dto/create-event-order.dto';
 
@@ -11,6 +12,9 @@ export class EventOrdersService {
   constructor(private prisma: PrismaService, private uploads: UploadsService) {}
 
   async create(dto: CreateEventOrderDto, files: Express.Multer.File[]) {
+    if (dto.termsVersion !== TERMS_VERSION) {
+      throw new BadRequestException('Os Termos foram atualizados. Recarregue a página e tente novamente.');
+    }
     const quantity = Number(dto.quantity);
     const amountCents = PACKAGES[quantity];
     if (!amountCents || files?.length !== quantity) {
@@ -35,6 +39,8 @@ export class EventOrdersService {
           customerName: dto.customerName.trim(),
           contact: dto.contact.trim(),
           pickup: dto.pickup,
+          termsVersion: TERMS_VERSION,
+          termsAcceptedAt: new Date(),
           quantity,
           amountCents,
           artworks: { create: uploaded },

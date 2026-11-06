@@ -1,4 +1,4 @@
-import { IsIn, IsString, MaxLength, MinLength } from 'class-validator';
+import { Equals, IsIn, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreateEventOrderDto {
   @IsString()
@@ -16,4 +16,12 @@ export class CreateEventOrderDto {
 
   @IsIn(['Retirada no evento', 'Retirada na loja'])
   pickup: string;
+
+  /** multipart/form-data envia texto: 'true' quando a caixa dos Termos foi marcada. */
+  @Equals('true', { message: 'Tem de aceitar os Termos e a Política de Privacidade' })
+  termsAccepted: string;
+
+  @IsString()
+  @MaxLength(20)
+  termsVersion: string;
 }
