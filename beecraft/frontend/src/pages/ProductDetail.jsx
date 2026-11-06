@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import AiBadge from '../components/AiBadge';
 import api from '../api/client';
 import { useCart } from '../context/CartContext';
 import AgendaPreviewCanvas from '../components/AgendaPreviewCanvas';
@@ -181,7 +182,7 @@ export default function ProductDetail() {
 
   return (
     <main className={`container ${workCategoryEntry ? 'work-product-page' : ''}`}>
-      {workCategoryEntry && <section className="product-family-banner"><img src={workCategoryEntry[1].image} alt={`Produtos para ${workCategoryEntry[1].title}`} /><div><div className="eyebrow">{workCategoryEntry[1].title}</div><h2>Crie uma peça só sua.</h2><p>Escolha os detalhes e veja a personalização antes de pedir.</p></div></section>}
+      {workCategoryEntry && <section className="product-family-banner"><img src={workCategoryEntry[1].image} alt={`Produtos para ${workCategoryEntry[1].title}`} /><AiBadge /><div><div className="eyebrow">{workCategoryEntry[1].title}</div><h2>Crie uma peça só sua.</h2><p>Escolha os detalhes e veja a personalização antes de pedir.</p></div></section>}
       <div className="breadcrumb"><Link to="/">Início</Link> / {product.category.name} / {product.name}</div>
       <section className="pdp">
         <div className="pdp-grid">

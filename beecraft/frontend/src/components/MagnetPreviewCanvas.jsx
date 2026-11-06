@@ -65,5 +65,5 @@ export default function MagnetPreviewCanvas({ customization, text, textColor, im
     return () => { cancelled = true; };
   }, [customization, text, textColor, image, selections]);
 
-  return <div className="agenda-live-preview magnet-live-preview"><div className="agenda-live-preview-head"><span>Pré-visualização do íman</span><b>Ao vivo</b></div><canvas ref={canvasRef} width="480" height="480" aria-label="Pré-visualização do íman personalizado" /><p>Imagem ilustrativa. Confirme o enquadramento antes da produção.</p></div>;
+  return <div className="agenda-live-preview magnet-live-preview"><div className="agenda-live-preview-head"><span>Pré-visualização do íman</span><b>Ao vivo</b></div><canvas ref={canvasRef} width="480" height="480" aria-label="Pré-visualização do íman personalizado" /><p>Imagem ilustrativa. Confirme o enquadramento antes da produção.</p><small className="ai-note">Modelo base gerado por IA.</small></div>;
 }

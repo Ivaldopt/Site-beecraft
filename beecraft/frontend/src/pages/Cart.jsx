@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { createWhatsappUrl } from '../components/WhatsappFab';
 import api from '../api/client';
+import ConsentFields from '../components/ConsentFields';
+import { TERMS_VERSION } from '../legal/version';
 import { createOrderMessage, money, savePendingOrder } from '../utils/orderMessage';
 import { trackCatalogEvent } from '../utils/analytics';
 import { deleteCartAttachment, getCartAttachment } from '../utils/cartAttachments';
@@ -13,6 +15,8 @@ const MBWAY_ENABLED = import.meta.env.VITE_MBWAY_ENABLED === 'true';
 export default function Cart() {
   const { items, removeItem, updateQuantity, clearCart, totalPrice } = useCart();
   const [customer, setCustomer] = useState({ name: '', email: '', phone: '' });
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
   const [fallbackWhatsappUrl, setFallbackWhatsappUrl] = useState('');
@@ -43,6 +47,9 @@ export default function Cart() {
           email: customer.email.trim(),
           phone: customer.phone.trim() || undefined,
         },
+        termsAccepted: acceptedTerms,
+        termsVersion: TERMS_VERSION,
+        marketingOptIn,
         items: items.map((item) => ({
           productId: item.productId,
           variantId: item.variantId || undefined,
@@ -128,7 +135,7 @@ export default function Cart() {
   return (
     <main className="container cart-page">
       <div className="breadcrumb"><Link to="/">Início</Link> / Carrinho</div>
-      <div className="section-head"><h2>O seu carrinho</h2></div>
+      <div className="section-head"><h1>O seu carrinho</h1></div>
       {!items.length ? (
         <div className="cart-empty-page">
           {fallbackWhatsappUrl || checkoutNotice ? (
@@ -204,6 +211,7 @@ export default function Cart() {
                 <label htmlFor="checkout-phone">Telefone</label>
                 <input id="checkout-phone" name="phone" type="tel" value={customer.phone} onChange={updateCustomer} pattern="\+?[0-9 ]{9,20}" autoComplete="tel" placeholder="+351 912 345 678" />
               </div>
+              <ConsentFields terms={acceptedTerms} onTerms={setAcceptedTerms} marketing={marketingOptIn} onMarketing={setMarketingOptIn} />
               {checkoutError && <p className="form-error" role="alert">{checkoutError}</p>}
               {checkoutNotice && <p className="checkout-notice" role="status">{checkoutNotice}</p>}
               {MBWAY_ENABLED && (

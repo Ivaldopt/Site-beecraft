@@ -204,6 +204,7 @@ export default function AgendaPreviewCanvas({ productName, customization, text, 
       <div className="agenda-live-preview-head"><span>Pré-visualização em tempo real</span><b>Ao vivo</b></div>
       <canvas ref={canvasRef} width="360" height="480" aria-label="Pré-visualização da agenda personalizada" />
       <p>Imagem ilustrativa. O enquadramento final será confirmado antes da produção.</p>
+      <small className="ai-note">Modelo base gerado por IA.</small>
     </div>
   );
 }
