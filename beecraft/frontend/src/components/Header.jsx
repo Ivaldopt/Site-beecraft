@@ -11,7 +11,7 @@ export default function Header() {
   // Fecha o menu móvel ao tocar em qualquer ligação ou ao carregar em Escape.
   const handleNavClick = (event) => { if (event.target.closest('a')) setMobileOpen(false); };
   const handleNavKeyDown = (event) => { if (event.key === 'Escape') setMobileOpen(false); };
-  return <><div className="topbar">Personalização artesanal · Produzido em Loulé, Algarve · Envio para Portugal e Espanha</div><header className="site-header"><div className="container nav">
+  return <><aside className="topbar" aria-label="Informação da loja">Personalização artesanal · Produzido em Loulé, Algarve · Envio para Portugal e Espanha</aside><header className="site-header"><div className="container nav">
     <Link className="logo" to="/">Bee<span>craft</span></Link>
     <nav id="menu-principal" className={`menu ${mobileOpen ? 'mobile-open' : ''}`} aria-label="Navegação principal" onClick={handleNavClick} onKeyDown={handleNavKeyDown}>
       <NavLink className="menu-mobile-only" to="/loja">Toda a loja</NavLink>

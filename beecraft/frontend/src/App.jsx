@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Home from './pages/Home';
@@ -11,6 +11,7 @@ import WhatsappFab from './components/WhatsappFab';
 import Shop from './pages/Shop';
 import NotFound from './pages/NotFound';
 import ContentPage from './pages/ContentPage';
+import { Privacy, Terms } from './pages/LegalPages';
 import Services from './pages/Services';
 import ServiceDetail from './pages/ServiceDetail';
 import Works from './pages/Works';
@@ -85,10 +86,12 @@ export default function App() {
 
   return (
     <>
+      <a className="skip-link" href="#conteudo">Saltar para o conteúdo</a>
       <Header />
       <ScrollToTop />
       <ScrollReveal />
       <PageAnalytics />
+      <div id="conteudo" tabIndex={-1}>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/loja" element={<Shop />} />
@@ -109,9 +112,14 @@ export default function App() {
         <Route path="/carrinho" element={<Cart />} />
         <Route path="/checkout" element={<Cart />} />
         <Route path="/pedido/:orderId" element={<OrderStatus />} />
+        <Route path="/privacidade" element={<Privacy />} />
+        <Route path="/termos" element={<Terms />} />
+        <Route path="/politica-privacidade" element={<Navigate to="/privacidade" replace />} />
+        <Route path="/termos-condicoes" element={<Navigate to="/termos" replace />} />
         <Route path="/:page" element={<ContentPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </div>
       <Footer />
       <WhatsappFab />
     </>

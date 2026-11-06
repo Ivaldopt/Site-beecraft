@@ -252,6 +252,11 @@ model Customer {
   email String  @unique
   phone String?
 
+  // Consentimento de marketing (opcional, separado dos termos). Só fica true se o cliente marcou a caixa.
+  marketingOptIn        Boolean   @default(false)
+  marketingOptInAt      DateTime?
+  marketingOptInVersion String?
+
   orders Order[]
 
   createdAt DateTime @default(now())
@@ -284,6 +289,10 @@ model Order {
   stripePaymentIntentId String?            @unique
   paidAt                DateTime?
   paymentEmailSentAt    DateTime?
+
+  // Prova da aceitação dos termos: versão e momento (definido no servidor).
+  termsVersion    String?
+  termsAcceptedAt DateTime?
 
   items OrderItem[]
 
@@ -357,6 +366,8 @@ model EventOrder {
   stripeSessionId       String?            @unique
   stripePaymentIntentId String?            @unique
   paidAt                DateTime?
+  termsVersion          String?
+  termsAcceptedAt       DateTime?
   artworks              EventArtwork[]
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt

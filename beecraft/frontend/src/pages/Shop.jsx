@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api/client';
 import ProductCard from '../components/ProductCard';
 import magnetsHero from '../assets/magnets-hero.jpg';
+import AiBadge from '../components/AiBadge';
 
 export default function Shop({ categoryOverride = '', title = 'Loja BeeCraft', hero = '' }) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -53,7 +54,7 @@ export default function Shop({ categoryOverride = '', title = 'Loja BeeCraft', h
 
   return (
     <main className="shop-page">
-      {hero === 'magnets' && <section className="magnets-shop-hero"><img src={magnetsHero} alt="Íman personalizado BeeCraft em azul pastel" /><div className="container magnets-shop-hero-content"><div className="eyebrow">Ímanes personalizados</div><h1>Pequenos detalhes.<br />Grandes memórias.</h1><p>Transforme fotografias, mensagens e marcas em peças únicas.</p><div className="magnet-hero-actions"><Link className="btn primary" to="/montador-imas">Montar os meus ímanes</Link><Link className="btn secondary" to="/personalizar/iman-button-personalizado">Personalização simples</Link></div></div></section>}
+      {hero === 'magnets' && <section className="magnets-shop-hero"><img src={magnetsHero} alt="Íman personalizado BeeCraft em azul pastel" /><AiBadge /><div className="container magnets-shop-hero-content"><div className="eyebrow">Ímanes personalizados</div><h1>Pequenos detalhes.<br />Grandes memórias.</h1><p>Transforme fotografias, mensagens e marcas em peças únicas.</p><div className="magnet-hero-actions"><Link className="btn primary" to="/montador-imas">Montar os meus ímanes</Link><Link className="btn secondary" to="/personalizar/iman-button-personalizado">Personalização simples</Link></div></div></section>}
       <div className="container">
         <div className="breadcrumb"><Link to="/">Início</Link> / Loja</div>
         <div className="shop-heading">

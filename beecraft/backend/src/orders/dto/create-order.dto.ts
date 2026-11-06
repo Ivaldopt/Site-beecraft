@@ -3,6 +3,8 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   ArrayUnique,
+  Equals,
+  IsBoolean,
   IsArray,
   IsEmail,
   IsInt,
@@ -121,4 +123,18 @@ export class CreateOrderDto {
   @ValidateNested({ each: true })
   @Type(() => CreateOrderItemDto)
   items: CreateOrderItemDto[];
+
+  /** Tem de ser true: o cliente marcou a caixa dos Termos e da Política de Privacidade. */
+  @Equals(true, { message: 'Tem de aceitar os Termos e a Política de Privacidade' })
+  termsAccepted: boolean;
+
+  /** Versão dos termos que o cliente viu; tem de ser a versão em vigor. */
+  @IsString()
+  @MaxLength(20)
+  termsVersion: string;
+
+  /** Opcional. Só true se o cliente marcou a caixa de marketing. */
+  @IsOptional()
+  @IsBoolean()
+  marketingOptIn?: boolean;
 }

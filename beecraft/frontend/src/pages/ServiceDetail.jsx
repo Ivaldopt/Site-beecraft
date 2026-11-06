@@ -4,6 +4,7 @@ import agendasImage from '../assets/services/agendas-organizacao.jpg';
 import albumsImage from '../assets/services/albuns-memorias.jpg';
 import childrenImage from '../assets/services/papelaria-infantil.jpg';
 import eventsImage from '../assets/services/eventos.jpg';
+import AiBadge from '../components/AiBadge';
 
 const services = {
   'agendas-organizacao': {
@@ -55,7 +56,7 @@ export default function ServiceDetail() {
   return <main className="service-detail-page">
     <section className="service-detail-hero"><div className="container service-detail-grid">
       <div><div className="eyebrow">{service.eyebrow}</div><h1>{service.title}</h1><p>{service.lead}</p><div className="btns"><a className="btn primary" href={quoteUrl} target="_blank" rel="noreferrer">Pedir orçamento</a><Link className="btn secondary" to="/servicos">Todos os serviços</Link></div></div>
-      <img src={service.image} alt={`Exemplos de ${service.title.toLowerCase()} personalizados`} />
+      <div className="ai-wrap"><img src={service.image} alt={`Exemplos de ${service.title.toLowerCase()} personalizados`} /><AiBadge /></div>
     </div></section>
 
     <section className="service-offer container"><div className="section-head"><div><div className="eyebrow">Possibilidades</div><h2>O que podemos criar</h2></div><p>Cada projeto é preparado de acordo com a sua ideia e necessidade.</p></div>

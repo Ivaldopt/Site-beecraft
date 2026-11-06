@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { useCart } from '../context/CartContext';
+import ConsentFields from '../components/ConsentFields';
+import { TERMS_VERSION } from '../legal/version';
 import { saveCartAttachment } from '../utils/cartAttachments';
 
 const SPEC = { front: 50, cut: 60, cutRadius: 7, frontRadius: 5, bleed: 1 };
@@ -255,6 +257,7 @@ export default function MagnetBuilder({ eventMode = false }) {
   const [product, setProduct] = useState(null);
   const [eventPackage, setEventPackage] = useState(3);
   const [contact, setContact] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [pickup, setPickup] = useState('Retirada no evento');
   const inputRef = useRef(null);
   const total = useMemo(() => items.reduce((sum, item) => sum + item.quantity, 0), [items]);
@@ -417,6 +420,10 @@ export default function MagnetBuilder({ eventMode = false }) {
       setStatus('Preencha o nome e o telefone ou email.');
       return;
     }
+    if (!acceptedTerms) {
+      setStatus('Aceite os Termos e a Política de privacidade para continuar.');
+      return;
+    }
     if (!WHATSAPP_NUMBER) {
       setStatus('O contacto WhatsApp da loja ainda não está configurado.');
       return;
@@ -429,6 +436,8 @@ export default function MagnetBuilder({ eventMode = false }) {
       form.append('contact', contact.trim());
       form.append('quantity', String(eventPackage));
       form.append('pickup', pickup);
+      form.append('termsAccepted', String(acceptedTerms));
+      form.append('termsVersion', TERMS_VERSION);
       for (let index = 0; index < items.length; index += 1) {
         const canvas = document.createElement('canvas');
         canvas.width = canvas.height = 1200;
@@ -559,6 +568,8 @@ export default function MagnetBuilder({ eventMode = false }) {
       </label>
     </>
   )}
+
+  {eventMode && <ConsentFields terms={acceptedTerms} onTerms={setAcceptedTerms} showMarketing={false} />}
 
   {eventMode ? (
     <button

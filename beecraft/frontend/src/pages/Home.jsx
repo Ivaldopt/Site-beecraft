@@ -22,7 +22,6 @@ export default function Home() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
   const [company, setCompany] = useState({ name: '', contact: '', email: '', quantity: '', details: '' });
   const [heroSlide, setHeroSlide] = useState(0);
   const [heroPlaying, setHeroPlaying] = useState(true); // escolha da pessoa (botão pausa/play)
@@ -171,7 +170,7 @@ export default function Home() {
         </div>
       </div></section>
 
-      <section className="newsletter"><div className="container newsletter-inner"><div><div className="eyebrow">Novidades BeeCraft</div><h2>Inspiração no seu email</h2><p>Receba novidades e uma oferta para a primeira compra.</p></div>{subscribed ? <strong>Obrigada! O seu interesse ficou registado.</strong> : <form onSubmit={(event) => { event.preventDefault(); setSubscribed(true); }}><label className="sr-only" htmlFor="newsletter-email">Email</label><input id="newsletter-email" type="email" required placeholder="O seu melhor email" /><button className="btn primary">Quero receber</button></form>}</div></section>
+      <section className="newsletter"><div className="container newsletter-inner"><div><div className="eyebrow">Novidades BeeCraft</div><h2>Fale connosco</h2><p>Para receber novidades e ofertas, marque a opção de marketing ao fazer uma encomenda ou escreva-nos pelo WhatsApp.</p></div><Link className="btn primary" to="/contactos">Contactos</Link></div></section>
     </main>
   );
 }
