@@ -120,11 +120,15 @@ export class PaymentsService {
 
   /** Estado público do pagamento; os itens só aparecem depois de pago. */
   async getPaymentView(orderId: string) {
-    let order = await this.prisma.order.findUnique({
-      where: { id: orderId },
-      include: { items: true },
-    });
-    if (!order) throw new NotFoundException('Encomenda não encontrada');
+    const load = async () => {
+      const found = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        include: { items: true },
+      });
+      if (!found) throw new NotFoundException('Encomenda não encontrada');
+      return found;
+    };
+    let order = await load();
 
     // Rede de segurança caso o webhook se atrase: pergunta directamente à Stripe.
     if (
@@ -138,11 +142,7 @@ export class PaymentsService {
         );
         if (session.payment_status === 'paid') {
           await this.markPaid(session);
-          order = await this.prisma.order.findUnique({
-            where: { id: orderId },
-            include: { items: true },
-          });
-          if (!order) throw new NotFoundException('Encomenda não encontrada');
+          order = await load();
         } else if (session.status === 'expired') {
           await this.markUnpaid(session, 'EXPIRED');
           order.paymentStatus = 'EXPIRED';
