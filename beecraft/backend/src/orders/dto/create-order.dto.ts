@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -35,12 +35,18 @@ export class CreateOrderCustomerDto {
   phone?: string;
 }
 
+// O formulário envia '' para campos que o cliente não preencheu: tratamos como "não indicado".
+const emptyToUndefined = ({ value }: { value: unknown }) =>
+  value === '' ? undefined : value;
+
 export class CustomizationDetailsDto {
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsIn(['Horizontal', 'Vertical'])
   orientation?: string;
 
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsIn(['1', '2', '3', '4', '5', '6'])
   columns?: string;
 
@@ -125,7 +131,9 @@ export class CreateOrderDto {
   items: CreateOrderItemDto[];
 
   /** Tem de ser true: o cliente marcou a caixa dos Termos e da Política de Privacidade. */
-  @Equals(true, { message: 'Tem de aceitar os Termos e a Política de Privacidade' })
+  @Equals(true, {
+    message: 'Tem de aceitar os Termos e a Política de Privacidade',
+  })
   termsAccepted: boolean;
 
   /** Versão dos termos que o cliente viu; tem de ser a versão em vigor. */

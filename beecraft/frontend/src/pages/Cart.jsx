@@ -9,6 +9,12 @@ import { createOrderMessage, money, savePendingOrder } from '../utils/orderMessa
 import { trackCatalogEvent } from '../utils/analytics';
 import { deleteCartAttachment, getCartAttachment } from '../utils/cartAttachments';
 
+// Remove campos de personalização que ficaram vazios.
+const cleanDetails = (details) => {
+  const filled = Object.fromEntries(Object.entries(details ?? {}).filter(([, value]) => value));
+  return Object.keys(filled).length ? filled : undefined;
+};
+
 // Só ativar (VITE_MBWAY_ENABLED=true) depois de a Stripe estar configurada no Railway.
 const MBWAY_ENABLED = import.meta.env.VITE_MBWAY_ENABLED === 'true';
 
@@ -57,7 +63,7 @@ export default function Cart() {
           quantity: item.quantity,
           customizationText: item.customizationText || undefined,
           customizationTextColor: item.customizationTextColor || undefined,
-          customizationDetails: item.customizationDetails || undefined,
+          customizationDetails: cleanDetails(item.customizationDetails),
           customizationFileName: item.customizationFileName || undefined,
         })),
       });
