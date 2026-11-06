@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import EmConstrucao from './pages/EmConstrucao';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
+import OrderStatus from './pages/OrderStatus';
 import WhatsappFab from './components/WhatsappFab';
 import Shop from './pages/Shop';
 import NotFound from './pages/NotFound';
@@ -107,6 +108,7 @@ export default function App() {
         <Route path="/personalizar/:slug" element={<ProductDetail />} />
         <Route path="/carrinho" element={<Cart />} />
         <Route path="/checkout" element={<Cart />} />
+        <Route path="/pedido/:orderId" element={<OrderStatus />} />
         <Route path="/:page" element={<ContentPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PricingService } from '../pricing/pricing.service';
+import { toPublicItem } from '../payments/order-view';
 import { CreateOrderDto } from './dto/create-order.dto';
 
 @Injectable()
@@ -93,6 +94,29 @@ export class OrdersService {
         customizationFileName: request.customizationFileName || null,
       })),
     };
+  }
+
+  async listForAdmin() {
+    const orders = await this.prisma.order.findMany({
+      include: { customer: true, items: true },
+      orderBy: { createdAt: 'desc' },
+      take: 300,
+    });
+    return orders.map((order) => ({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      status: order.status,
+      paymentStatus: order.paymentStatus,
+      total: Number(order.total),
+      paidAt: order.paidAt,
+      createdAt: order.createdAt,
+      customer: {
+        name: order.customer.name,
+        email: order.customer.email,
+        phone: order.customer.phone,
+      },
+      items: order.items.map(toPublicItem),
+    }));
   }
 
   private createOrderNumber(): string {

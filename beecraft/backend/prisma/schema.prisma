@@ -258,6 +258,13 @@ model Customer {
   updatedAt DateTime @updatedAt
 }
 
+enum OrderPaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  EXPIRED
+}
+
 model Order {
   id          String @id @default(cuid())
   orderNumber String @unique
@@ -272,6 +279,12 @@ model Order {
   shipping Decimal @default(0) @db.Decimal(10, 2)
   total    Decimal @db.Decimal(10, 2)
 
+  paymentStatus         OrderPaymentStatus @default(PENDING)
+  stripeSessionId       String?            @unique
+  stripePaymentIntentId String?            @unique
+  paidAt                DateTime?
+  paymentEmailSentAt    DateTime?
+
   items OrderItem[]
 
   createdAt DateTime @default(now())
@@ -279,6 +292,7 @@ model Order {
 
   @@index([customerId])
   @@index([status])
+  @@index([paymentStatus, createdAt])
 }
 
 model OrderItem {

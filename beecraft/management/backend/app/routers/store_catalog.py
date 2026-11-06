@@ -57,6 +57,9 @@ async def upload_images(product_id: str, _: Owner, files: list[UploadFile] = Fil
 @router.delete("/images/{image_id}")
 async def delete_image(image_id: str, _: Owner): return await relay("DELETE", f"/uploads/{image_id}")
 
+@router.get("/orders")
+async def store_orders(_: CurrentUser): return await relay("GET", "/orders/admin/all")
+
 @router.get("/event-orders")
 async def event_orders(_: CurrentUser): return await relay("GET", "/event-orders/admin/all")
 
